@@ -23,26 +23,25 @@ case class Cell[T](var elem: T) {
   * ```
   */
 class QuadEdge(var orig: Cell[Point], var next: QuadEdge, var _rot: QuadEdge)
-extends Iterable[QuadEdge]
-{
+    extends Iterable[QuadEdge] {
 
-override def iterator: Iterator[QuadEdge] = {
-  val v = scala.collection.mutable.Set[QuadEdge]()
-  val stack = scala.collection.mutable.Stack[QuadEdge](this)
+  override def iterator: Iterator[QuadEdge] = {
+    val v = scala.collection.mutable.Set[QuadEdge]()
+    val stack = scala.collection.mutable.Stack[QuadEdge](this)
 
-  while (stack.nonEmpty) {
-    val e = stack.pop()
-    if (!v.contains(e) && !v.contains(e.sym())) {
-      v.add(e)
-      stack.push(e.onext())
-      stack.push(e.lnext())
-      stack.push(e.dnext())
-      stack.push(e.rnext())
+    while (stack.nonEmpty) {
+      val e = stack.pop()
+      if (!v.contains(e) && !v.contains(e.sym())) {
+        v.add(e)
+        stack.push(e.onext())
+        stack.push(e.lnext())
+        stack.push(e.dnext())
+        stack.push(e.rnext())
+      }
     }
-  }
 
-  v.iterator
-}
+    v.iterator
+  }
 
   def printAll() = {
     println(lnext() + "   <-   " + get_dst() + "   <-   " + dnext())
@@ -164,11 +163,11 @@ override def iterator: Iterator[QuadEdge] = {
   /** Connect */
   def --->(rhs: QuadEdge) = this connectTo rhs
 
-
-
 };
 
 object QuadEdge {
+  def apply(src: Point, dst: Point): QuadEdge = make_edge(src, dst)
+
   def make_edge(src: Point, dst: Point): QuadEdge = {
     val site_voro =
       // Cell(Point(-10, -10))

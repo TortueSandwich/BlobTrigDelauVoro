@@ -1,20 +1,34 @@
-sealed trait Tree
-case class Node(left: Tree, right: Tree) extends Tree
-case class Leaf(elements: List[Point]) extends Tree
+/** Custom structure to cut an ordered sequence in groups of 2 or 3 consecutive
+  * elements.
+  */
+private sealed trait Tree
+private case class Node(left: Tree, right: Tree) extends Tree
 
-object Tree {
-  def recBuild(elements: List[Point]): Tree = {
-    if (elements.length <= 3) {
-      Leaf(elements)
+/** group of 2 or 3 ordered element */
+private case class Leaf(elements: List[Point]) extends Tree
+
+private object Tree {
+
+  /** Throw IllegalArgumentException si la liste contient des points dupliqués
+    */
+  def apply(elements: List[Point]): Tree = {
+    val uniqueElements = elements.distinct
+    if (uniqueElements.size != elements.size) {
+      throw new IllegalArgumentException(
+        "Il y a deux points pareil dans la liste à trianguler"
+      )
     } else {
-      val (leftElements, rightElements) = elements.splitAt(elements.length / 2)
-      Node(recBuild(leftElements), recBuild(rightElements))
+      val sortedElements = uniqueElements.sorted
+      recBuild(sortedElements)
     }
   }
 
-  def apply(elements: List[Point]) = {
-    val sortedElements = elements.sorted
-    assume(elements.size == elements.toSet.size, "il y a deux points pareil")
-    recBuild(sortedElements)
+  private def recBuild(elements: List[Point]): Tree = {
+    if (elements.length <= 3) {
+      Leaf(elements)
+    } else {
+      val (leftElem, rightElem) = elements.splitAt(elements.length / 2)
+      Node(recBuild(leftElem), recBuild(rightElem))
+    }
   }
 }
