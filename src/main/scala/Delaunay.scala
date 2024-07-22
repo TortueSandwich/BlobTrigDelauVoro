@@ -37,7 +37,7 @@ object Delaunay {
       case Node(left, right) => handleNode(left, right)
     }
 
-  def handleLeaf(l: List[Point]) = l match {
+  private def handleLeaf(l: List[Point]) = l match {
     case List(p1, p2) => {
       val a = QuadEdge.make_edge(p1, p2)
       (a, a.sym())
@@ -62,7 +62,7 @@ object Delaunay {
       ) // unreachable
   }
 
-  def handleNode(left: Tree, right: Tree) = {
+  private def handleNode(left: Tree, right: Tree) = {
     var (ldo, ldi) = divideAndConquerDelaunay(left)
     var (rdi, rdo) = divideAndConquerDelaunay(right)
 
@@ -82,7 +82,7 @@ object Delaunay {
   }
 
   /** Fuse two hull, assumed already linked by the base */
-  def fusion(base: QuadEdge): Unit = {
+  private def fusion(base: QuadEdge): Unit = {
     @annotation.tailrec
     def recursiveFusion(basel: QuadEdge): Unit = {
       // above the base, like having an angle < 180°
@@ -113,69 +113,69 @@ object Delaunay {
 
       if (updated) recursiveFusion(newBasel)
     }
-
-    /** also edit, by deleting wrong candidate blocking the way */
-    def findRealCandidate(
-        fstCandidate: QuadEdge,
-        baseEdge: QuadEdge,
-        valid: QuadEdge => Boolean,
-        nextEdgeFunc: QuadEdge => QuadEdge
-    ): QuadEdge = {
-
-      val (baseOrg, baseDst) = (baseEdge.get_org(), baseEdge.get_dst())
-
-      // he's on steroid
-      // If true than current is worst than the next one
-      def superInValid(current: QuadEdge, next: QuadEdge) = {
-        valid(current) && // bit useless, might be avoid
-        next != baseEdge && valid(next) && // "is the next one is cool too"
-        next
-          .get_dst() // "Is he better than you ?"
-          .is_incircle(baseDst, baseOrg, current.get_dst())
-      }
-
-      @annotation.tailrec
-      def recurse(e: QuadEdge): QuadEdge = {
-        // Vérifie si l'edge e est valide pour la condition donnée
-        val (currCand, nextCand) = (e, nextEdgeFunc(e))
-        if (superInValid(currCand, nextCand)) {
-          // then you are out
-          val nextE = nextCand
-          currCand.deleteEdge()
-          recurse(nextE)
-        } else {
-          currCand
-        }
-      }
-      recurse(fstCandidate)
-    }
-
-    /** pits the right-wing and left-wing candidates against each other */
-    def linkBestCandidate(
-        basel: QuadEdge,
-        lcand: QuadEdge,
-        rcand: QuadEdge,
-        valid: QuadEdge => Boolean
-    ): (QuadEdge, Boolean) = {
-      val (lorg, ldst) = (lcand.get_org(), lcand.get_dst())
-      val (rorg, rdst) = (rcand.get_org(), rcand.get_dst())
-
-      if (
-        !valid(lcand) ||
-        (valid(rcand) && rdst.is_incircle(ldst, lorg, rorg))
-      ) {
-        (QuadEdge.connect(rcand, basel.sym()), true)
-      } else if (
-        !valid(rcand) ||
-        (valid(lcand) && ldst.is_incircle(rdst, rorg, lorg))
-      ) {
-        (QuadEdge.connect(basel.sym(), lcand.sym()), true)
-      } else { // unreachable
-        println("Erreur dans le choix de l'edge")
-        (basel, false)
-      }
-    }
     recursiveFusion(base)
+  }
+
+  /** also edit, by deleting wrong candidate blocking the way */
+  private def findRealCandidate(
+      fstCandidate: QuadEdge,
+      baseEdge: QuadEdge,
+      valid: QuadEdge => Boolean,
+      nextEdgeFunc: QuadEdge => QuadEdge
+  ): QuadEdge = {
+
+    val (baseOrg, baseDst) = (baseEdge.get_org(), baseEdge.get_dst())
+
+    // he's on steroid
+    // If true than current is worst than the next one
+    def superInValid(current: QuadEdge, next: QuadEdge) = {
+      valid(current) && // bit useless, might be avoid
+      next != baseEdge && valid(next) && // "is the next one is cool too"
+      next
+        .get_dst() // "Is he better than you ?"
+        .is_incircle(baseDst, baseOrg, current.get_dst())
+    }
+
+    @annotation.tailrec
+    def recurse(e: QuadEdge): QuadEdge = {
+      // Vérifie si l'edge e est valide pour la condition donnée
+      val (currCand, nextCand) = (e, nextEdgeFunc(e))
+      if (superInValid(currCand, nextCand)) {
+        // then you are out
+        val nextE = nextCand
+        currCand.deleteEdge()
+        recurse(nextE)
+      } else {
+        currCand
+      }
+    }
+    recurse(fstCandidate)
+  }
+
+  /** pits the right-wing and left-wing candidates against each other */
+  def linkBestCandidate(
+      basel: QuadEdge,
+      lcand: QuadEdge,
+      rcand: QuadEdge,
+      valid: QuadEdge => Boolean
+  ): (QuadEdge, Boolean) = {
+    val (lorg, ldst) = (lcand.get_org(), lcand.get_dst())
+    val (rorg, rdst) = (rcand.get_org(), rcand.get_dst())
+
+    if (
+      !valid(lcand) ||
+      (valid(rcand) && rdst.is_incircle(ldst, lorg, rorg))
+    ) {
+      (QuadEdge.connect(rcand, basel.sym()), true)
+    } else if (
+      !valid(rcand) ||
+      (valid(lcand) && ldst.is_incircle(rdst, rorg, lorg))
+    ) {
+      (QuadEdge.connect(basel.sym(), lcand.sym()), true)
+    } else { // unreachable
+      println("Erreur dans le choix de l'edge")
+      (basel, false)
+    }
   }
 
   /** Strictly on the right side */
