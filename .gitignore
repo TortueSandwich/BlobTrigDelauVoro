@@ -1,5 +1,6 @@
-./target
-./.vscode
-./project
-./.metals
-./.bloop
+target/
+.vscode/
+project/
+.metals/
+.bloop/
+*.pdf
