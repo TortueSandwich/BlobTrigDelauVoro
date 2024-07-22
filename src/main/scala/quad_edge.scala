@@ -6,66 +6,48 @@ import scala.util.control.Breaks._
 import scala.collection.mutable
 import scala.annotation.tailrec
 
-case class Cell[T](var elem: T) {
-  def set(e: T) = elem = e
-  def print_hash() = {
-    println(getClass().getName() + "@" + Integer.toHexString(hashCode()))
-  }
-}
-
-/** ```
+/** Represents an edge in a subdivision of a space and its dual. A kind 
+  * of parallel crossed double linked list
+  * 
+  * ```txt
   * Lnext | Dnext         Dprev | Rprev
-  * <---  . <---           ---> . --->
-  *       ^                     |
-  *       |                     v
-  * <---  . <---           ---> . --->
+  * <--- dst <---         ---> dst --->
+  *       ^                     ^
+  *       |                     |
+  * <--- org <---         ---> org --->
   * Onext | Rnext         Lprev | Oprev
+  * ```
+  *
+  * qe.onext.onext.onext.onext... gives every edge that are connected to the Org,
+  * all qe, qe.onext, qe.onext.onext have the same Org, it's spinning around Org
+  *
+  * To place yourself on the dual, just call .rot() This structure does not
+  * depend on the coordinate of the point, only on the relationships between the points
+  * and the surfaces
+  *
+  * ```txt
+  *         dst
+  *          ^
+  *          |
+  * left <---+--- right
+  *          |
+  *         org
   * ```
   */
 class QuadEdge(var orig: Cell[Point], var next: QuadEdge, var _rot: QuadEdge)
     extends Iterable[QuadEdge] {
+  // Why a cell ? cause i wanted to edit the coordinate one time after setting the reference
+  // might need some fixes tho
 
-  override def iterator: Iterator[QuadEdge] = {
-    val v = scala.collection.mutable.Set[QuadEdge]()
-    val stack = scala.collection.mutable.Stack[QuadEdge](this)
-
-    while (stack.nonEmpty) {
-      val e = stack.pop()
-      if (!v.contains(e) && !v.contains(e.sym())) {
-        v.add(e)
-        stack.push(e.onext())
-        stack.push(e.lnext())
-        stack.push(e.dnext())
-        stack.push(e.rnext())
-      }
-    }
-
-    v.iterator
-  }
-
-  def printAll() = {
-    println(lnext() + "   <-   " + get_dst() + "   <-   " + dnext())
-    println("                                         ^")
-    println("                                         |")
-    println(onext() + "   <-   " + get_org() + "   <-   " + rnext())
-  }
-
-  def printAllDual() = {
-    println(rot.lnext + "   <-   " + rot.get_dst + "   <-   " + rot.dnext)
-    println("                                         ^")
-    println("                                         |")
-    println(rot.onext + "   <-   " + rot.get_org + "   <-   " + rot.rnext)
-  }
-
-  def get_org_cell(): Cell[Point] = orig
   def get_org(): Point = orig.elem
-  // eDest = e Sym  Org
-  def get_dst_cell(): Cell[Point] = sym().get_org_cell()
+  def get_org_cell(): Cell[Point] = orig
+
   def get_dst(): Point = sym().get_org()
-  // e Left = e Rot-‘Org
+  def get_dst_cell(): Cell[Point] = sym().get_org_cell()
+
   def left(): Point = this.tor().get_org()
   def left_cell(): Cell[Point] = this.tor().get_org_cell()
-  // eRight = e Rot  Org
+
   def right(): Point = this.rot().get_org()
   def right_cell(): Cell[Point] = this.rot().get_org_cell()
 
@@ -75,14 +57,14 @@ class QuadEdge(var orig: Cell[Point], var next: QuadEdge, var _rot: QuadEdge)
   // def rotInv(): QuadEdge = _rot.sym()
 
   def onext(): QuadEdge = next
+  def rnext(): QuadEdge = rot().onext().tor()
   def dnext(): QuadEdge = sym().onext().sym()
   def lnext(): QuadEdge = tor().onext().rot()
-  def rnext(): QuadEdge = _rot.onext().tor()
 
-  def oprev(): QuadEdge = _rot.onext().rot()
-  def dprev(): QuadEdge = tor().onext().tor()
-  def lprev(): QuadEdge = next.sym()
+  def lprev(): QuadEdge = onext().sym()
+  def oprev(): QuadEdge = rot().onext().rot()
   def rprev(): QuadEdge = sym().onext()
+  def dprev(): QuadEdge = tor().onext().tor()
 
   def setNext(new_next: QuadEdge) = next = new_next
   def setOrig(org: Point) = orig.set(org)
@@ -163,21 +145,54 @@ class QuadEdge(var orig: Cell[Point], var next: QuadEdge, var _rot: QuadEdge)
   /** Connect */
   def --->(rhs: QuadEdge) = this connectTo rhs
 
+  def printAll() = {
+    println(lnext() + "   <-   " + get_dst() + "   <-   " + dnext())
+    println("                                         ^")
+    println("                                         |")
+    println(onext() + "   <-   " + get_org() + "   <-   " + rnext())
+  }
+
+  def printAllDual() = {
+    println(rot.lnext + "   <-   " + rot.get_dst + "   <-   " + rot.dnext)
+    println("                                         ^")
+    println("                                         |")
+    println(rot.onext + "   <-   " + rot.get_org + "   <-   " + rot.rnext)
+  }
+
+  override def iterator: Iterator[QuadEdge] = {
+    val v = scala.collection.mutable.Set[QuadEdge]()
+    val stack = scala.collection.mutable.Stack[QuadEdge](this)
+
+    while (stack.nonEmpty) {
+      val e = stack.pop()
+      if (!v.contains(e) && !v.contains(e.sym())) {
+        v.add(e)
+        stack.push(e.onext())
+        stack.push(e.lnext())
+        stack.push(e.dnext())
+        stack.push(e.rnext())
+      }
+    }
+
+    v.iterator
+  }
+
 };
 
 object QuadEdge {
+  def apply(): QuadEdge = make_edge()
   def apply(src: Point, dst: Point): QuadEdge = make_edge(src, dst)
 
-  def make_edge(src: Point, dst: Point): QuadEdge = {
-    val site_voro =
-      // Cell(Point(-10, -10))
-      // Cell(Point(Random.nextInt(), -200))
-      Cell(Point.Infinity)
-
-    val q0 = new QuadEdge(Cell(src), null, null);
-    val e0 = new QuadEdge(site_voro, null, null);
-    val q1 = new QuadEdge(Cell(dst), null, null);
-    val e1 = new QuadEdge(site_voro, null, null);
+  /** Creation primitive
+   * 
+   * A line in an infinite space. 
+   * The dual is an infinite line cutting the space in half
+  */
+  private def make_edge(): QuadEdge = {
+    val q0 = new QuadEdge(null, null, null);
+    val e0 = new QuadEdge(null, null, null);
+    val q1 = new QuadEdge(null, null, null);
+    val e1 = new QuadEdge(null, null, null);
 
     q0.next = q0; q1.next = q1;
     e0.next = e1; e1.next = e0;
@@ -188,6 +203,28 @@ object QuadEdge {
     return q0;
   }
 
+
+  def make_edge(src: Point, dst: Point): QuadEdge = {
+    val qe = make_edge()
+    val site_voro = Cell(Point.Infinity)
+
+    qe.setOrigCell(Cell(src))
+    qe.setDestCell(Cell(dst))
+
+    qe.rot().setOrigCell(site_voro)
+    qe.rot().setDestCell(site_voro)
+    qe
+  }
+
+  /** Operation primitive
+   * 
+   * Let's be easy
+   * a.Org = b.Org  <=SPLICE!=> a.Org != b.Org
+   * independently
+   * a.left = b.left  <=SPLICE!=> a.left != b.left
+   * 
+   * achieved by splitting/fusionning onexts
+  */
   def splice(a: QuadEdge, b: QuadEdge) = {
     val (alpha, beta) = (a.onext().rot(), b.onext().rot())
     val (t1, t2) = (a.onext(), b.onext())
@@ -196,8 +233,8 @@ object QuadEdge {
     val (tex1, tex2) = (alpha.onext(), beta.onext())
     alpha.setNext(tex2); beta.setNext(tex1);
 
-    a.maj_ring()
-    b.maj_ring()
+    a.maj_ring() // useless :|, needs to think about it
+    b.maj_ring() // useless :|, needs to think about it
   }
 
   def connect(a: QuadEdge, b: QuadEdge): QuadEdge = {
