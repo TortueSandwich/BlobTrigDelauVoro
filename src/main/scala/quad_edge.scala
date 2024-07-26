@@ -177,6 +177,14 @@ class QuadEdge(var orig: Cell[Point], var next: QuadEdge, var _rot: QuadEdge)
     v.iterator
   }
 
+    /** Strictly on the right side */
+  def rightof(X: Point): Boolean =
+    Point.ccw(X, this.get_dst(), this.get_org())
+
+  /** Strictly on the left side */
+  def leftof(X: Point): Boolean =
+    Point.ccw(X, this.get_org(), this.get_dst())
+
 };
 
 object QuadEdge {

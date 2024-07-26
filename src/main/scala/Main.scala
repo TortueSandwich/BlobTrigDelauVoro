@@ -1,4 +1,4 @@
-import Delaunay.delaunaise
+
 import scalafx.scene.layout.Pane
 import scalafx.scene.shape.Circle
 import scalafx.scene.shape.Line

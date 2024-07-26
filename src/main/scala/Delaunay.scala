@@ -1,27 +1,48 @@
 import scala.util.control.Breaks._
 
 object Delaunay {
-  def TriangulateDelaunay(points: List[Point]) = {
-    val root = Tree.apply(points)
-    // val (res_edge, _) = divideAndConquerOLD(root)
-    val (res_edge, _) = divideAndConquerDelaunay(root)
-    val truc = res_edge.iterator
-      .flatMap(e => Seq(e.right_ring().toSet, e.left_ring().toSet))
-      .toSet
-    truc.foreach(s =>
-      if (s.size == 3) {
-        val Seq(a, b, c) =
-          s.flatMap(e => Seq(e.rot().get_org(), e.rot().get_dst())).toSeq
-        val circumcenter = Point.circumcenter(a, b, c)
-        val cell = Cell(circumcenter)
-        s.foreach(_.setOrigCell(cell))
-      } else {
-        val cel = Cell(Point.Infinity)
-        s.foreach(_.setOrigCell(cel))
-      }
-    )
-    res_edge
+def TriangulateDelaunay(points: List[Point]): QuadEdge = {
+  val root = Tree.apply(points)
+  val (resEdge, _) = divideAndConquerDelaunay(root)
+
+  val edgeSets: Set[Set[QuadEdge]] = resEdge.iterator.flatMap(e => Seq(e.right_ring().toSet, e.left_ring().toSet)).toSet
+
+  if (edgeSets.size == 2 && edgeSets.forall(_.size == 3)) {
+    edgeSets.toSeq match {
+      case Seq(set1, set2) =>
+        val pointsInSet1 = set1.flatMap(e => Seq(e.tor.get_org(), e.tor.get_dst())).toSet.toSeq
+        pointsInSet1 match {
+          case Seq(p1, p2, p3) => {
+
+            val circumcenter = Cell(Point.circumcenter(p1, p2, p3))
+            set1.foreach(_.setOrigCell(circumcenter))
+            set1.foreach(_.setDestCell(Cell(Point.Infinity)))
+          }
+          case _ => println("!!!\nWTF22222\n!!!")
+        }
+      case _ => println("!!!\nWTF\n!!!")
+    }
+    return resEdge
   }
+
+  edgeSets.foreach { edgeSet =>
+    if (edgeSet.size == 3) {
+      val points = edgeSet.flatMap(e => Seq(e.rot().get_org(), e.rot().get_dst())).toSet.toSeq
+      if (points.size == 3) {
+        val circumcenter = Point.circumcenter(points(0), points(1), points(2))
+        val cell = Cell(circumcenter)
+        edgeSet.foreach(_.setOrigCell(cell))
+      }
+    } else {
+      val cell = Cell(Point.Infinity)
+      edgeSet.foreach(_.setOrigCell(cell))
+    }
+  }
+
+  resEdge
+}
+
+
 
   /** return the leftmost and right most edge of the hull in clock wise
     * ```txt
@@ -86,7 +107,7 @@ object Delaunay {
     @annotation.tailrec
     def recursiveFusion(basel: QuadEdge): Unit = {
       // above the base, like having an angle < 180°
-      def valid(e: QuadEdge): Boolean = Delaunay.rightof(e.get_dst(), basel)
+      def valid(e: QuadEdge): Boolean = basel.rightof(e.get_dst())
 
       val (newBasel, updated) = {
 
@@ -178,19 +199,11 @@ object Delaunay {
     }
   }
 
-  /** Strictly on the right side */
-  def rightof(X: Point, e: QuadEdge): Boolean =
-    Point.ccw(X, e.get_dst(), e.get_org())
-
-  /** Strictly on the left side */
-  def leftof(X: Point, e: QuadEdge): Boolean =
-    Point.ccw(X, e.get_org(), e.get_dst())
-
   @annotation.tailrec
   def findCommonTangeant(ldi: QuadEdge, rdi: QuadEdge): (QuadEdge, QuadEdge) = {
-    if (leftof(rdi.get_org(), ldi)) {
+    if (ldi.leftof(rdi.get_org())) {
       findCommonTangeant(ldi.lnext(), rdi)
-    } else if (rightof(ldi.get_org(), rdi)) {
+    } else if (rdi.rightof(ldi.get_org() )) {
       findCommonTangeant(ldi, rdi.rprev())
     } else {
       (ldi, rdi)

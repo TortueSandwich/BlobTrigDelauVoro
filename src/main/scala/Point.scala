@@ -5,11 +5,8 @@ case class Point(val x: Double, val y: Double) extends Ordered[Point] {
     else this.y.compare(that.y)
   }
 
-  
-
-
   /*Renvoie vrai si self est dans le cercle circonscrit de a, b, et c*/
-  def is_incircle(a: Point, b: Point, c: Point)(implicit distance : (Point, Point) => Double): Boolean = {
+  def is_incircle(a: Point, b: Point, c: Point): Boolean = {
     assume(!Point.areCollinear(a, b, c), "les point sont colinéaire")
     assume(a != b, s"a et b sont pareil (i.e = $a)")
     assume(b != c, s"b et c sont pareil (i.e = $b)")
@@ -19,8 +16,8 @@ case class Point(val x: Double, val y: Double) extends Ordered[Point] {
     }
     val centre = Point.circumcenter(a, b, c)
 
-    val radiusDistance = distance(centre, a)
-    val distanceToSelf = distance(centre, this)
+    val radiusDistance = Point.squaredEuclidian(centre, a)
+    val distanceToSelf = Point.squaredEuclidian(centre, this)
 
     // <= car == si sur le cerle
     distanceToSelf <= radiusDistance
@@ -29,9 +26,28 @@ case class Point(val x: Double, val y: Double) extends Ordered[Point] {
   // cross product (=0:colineaire, >0:CCW, <0:CW)
   def ^(rhs: Point): Double = this.x * rhs.y - this.y * rhs.x
 
+  def +(rhs: Point): Point = Point(this.x + rhs.x, this.y + rhs.y)
   def -(rhs: Point): Point = Point(this.x - rhs.x, this.y - rhs.y)
 
+  def isPointInTriangle(a: Point, b: Point, c: Point): Boolean = {
+    // Utilisation du produit vectoriel pour vérifier le signe de la zone de chaque triangle formé avec le point p
+    def sign(p1: Point, p2: Point, p3: Point): Double = {
+      (p1.x - p3.x) * (p2.y - p3.y) - (p2.x - p3.x) * (p1.y - p3.y)
+    }
 
+    // Calcul des signes des produits vectoriels
+    val d1 = sign(this, a, b)
+    val d2 = sign(this, b, c)
+    val d3 = sign(this, c, a)
+
+    // Vérifie si les signes sont tous positifs ou tous négatifs, ce qui signifie que le point est dans le triangle
+    val hasNeg = (d1 < 0) || (d2 < 0) || (d3 < 0)
+    val hasPos = (d1 > 0) || (d2 > 0) || (d3 > 0)
+
+    !(hasNeg && hasPos)
+  }
+
+  def scale(a: Double): Point = Point(this.x*a, this.y*a)
 }
 
 object Point {
@@ -45,15 +61,15 @@ object Point {
     (A ^ B) == 0.0
   }
 
-  /** true si counterclockwise-oriented triangle ie 
-   * ```txt
-   * si   b    et faux pour c  -  a 
-   *    /   \                \  / 
-   *   c  -  a                b
-   * ```
-   * 
-   * cross > 0
-   */
+  /** true si counterclockwise-oriented triangle ie
+    * ```txt
+    * si   b    et faux pour c  -  a
+    *    /   \                \  /
+    *   c  -  a                b
+    * ```
+    *
+    * cross > 0
+    */
   def ccw(a: Point, b: Point, c: Point): Boolean = {
     assume(a != b, s"a et b sont pareil (i.e = $a)")
     assume(b != c, s"b et c sont pareil (i.e = $b)")
@@ -89,18 +105,28 @@ object Point {
   val Infinity: Point = Point(Double.PositiveInfinity, Double.PositiveInfinity)
   val Origin: Point = Point(0, 0)
 
-  implicit def squaredEuclidian(a : Point, b : Point): Double = Math.pow(a.x-b.x, 2) + Math.pow(a.y-b.y, 2)
-  def euclidian(a : Point, b : Point): Double = Math.sqrt(Math.pow(a.x-b.x, 2) + Math.pow(a.y-b.y, 2))
+  implicit def squaredEuclidian(a: Point, b: Point): Double =
+    Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2)
+  def euclidian(a: Point, b: Point): Double =
+    Math.sqrt(Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2))
 
-  def manathan(a : Point, b : Point): Double = (a.x - b.x).abs + (a.y- b.y).abs 
-  def sup(a : Point, b : Point): Double = Math.max((a.x-b.x).abs, (a.y-b.y).abs)
-  
-  def sncf(a : Point, b : Point): Double = 
+  def manathan(a: Point, b: Point): Double = (a.x - b.x).abs + (a.y - b.y).abs
+  def sup(a: Point, b: Point): Double =
+    Math.max((a.x - b.x).abs, (a.y - b.y).abs)
+
+  def sncf(a: Point, b: Point): Double =
     if (a == b) 0.0
-    else if (a!=Point.Origin && b != Point.Origin && Point.areCollinear(a,b,Point.Origin)) euclidian(a-b, Point.Origin)
+    else if (
+      a != Point.Origin && b != Point.Origin && Point.areCollinear(
+        a,
+        b,
+        Point.Origin
+      )
+    ) euclidian(a - b, Point.Origin)
     else euclidian(a, Point.Origin) + euclidian(b, Point.Origin)
-    
-  def camberra(a : Point, b : Point): Double = (a.x-b.x).abs/(a.x.abs + b.x.abs) + (a.y-b.y).abs/(a.y.abs + b.y.abs)
+
+  def camberra(a: Point, b: Point): Double =
+    (a.x - b.x).abs / (a.x.abs + b.x.abs) + (a.y - b.y).abs / (a.y.abs + b.y.abs)
 
   def centroid(points: Seq[Point]): Point = {
     val validPoints = points.filterNot(p => p == Infinity)

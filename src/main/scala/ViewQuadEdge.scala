@@ -23,7 +23,6 @@ class ViewQuadEdge(val qe: QuadEdge, val infoBar: Text) extends Pane {
   height.onChange(updatePositions())
   updatePositions()
 
-  // Draw points
   def drawPoints(
       scaleX: Double,
       scaleY: Double

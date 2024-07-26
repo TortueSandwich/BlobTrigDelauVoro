@@ -30,23 +30,23 @@ object PointsAndLinesApp extends JFXApp3 {
       // Point(-3,3), Point(-4,2), Point(-5,0), Point(-5,1), Point(-5,3),
     )
     val n = 1000
-    val (result1, result2) = Delaunay.delaunaise(
+    val result = Delaunay.TriangulateDelaunay(
       // points
       // generateHexagonalLattice(n,n,2)
-      Point.generatePoints(50_000).toList
+      Point.generatePoints(1_000).toList
     )
     println("FINIIIIII")
-    println(result1, result2)
-    val truc = result1.iterator.flatMap(e => Seq(e.right_ring().toSet, e.left_ring().toSet)).toSet
+    println(result)
+    val truc = result.iterator.flatMap(e => Seq(e.right_ring().toSet, e.left_ring().toSet)).toSet
     truc.foreach(s => if (s.size != 3) println(s.size))
     // println(result2.isDelaunay())
 
 
 
-    // stage = new JFXApp3.PrimaryStage {
-    //   title = "Points and Lines"
-    //   scene = createScene(result1)
-    // }
+    stage = new JFXApp3.PrimaryStage {
+      title = "Points and Lines"
+      scene = createScene(result)
+    }
   }
 
   // Create the main scene
