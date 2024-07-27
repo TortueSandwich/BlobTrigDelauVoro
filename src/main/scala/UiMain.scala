@@ -4,8 +4,8 @@ import scalafx.scene.layout.StackPane
 import scalafx.scene.control.Button
 
 object UiMain extends JFXApp3 {
-  val WIDTH = 600
-  val HEIGHT = 450
+  val WIDTH = 1200
+  val HEIGHT = 600
 
   override def start(): Unit = {
     stage = new JFXApp3.PrimaryStage {

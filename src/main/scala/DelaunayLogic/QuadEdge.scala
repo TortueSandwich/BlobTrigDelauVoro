@@ -35,22 +35,35 @@ import scala.annotation.tailrec
   *         org
   * ```
   */
-class QuadEdge(var orig: Cell[Point], var next: QuadEdge, var _rot: QuadEdge)
-    extends Iterable[QuadEdge] {
+class QuadEdge(
+    private var orig: Cell[Point],
+    private var next: QuadEdge,
+    private var _rot: QuadEdge
+) extends Iterable[QuadEdge] {
   // Why a cell ? cause i wanted to edit the coordinate one time after setting the reference
   // might need some fixes tho
 
-  def get_org(): Point = orig.elem
-  def get_org_cell(): Cell[Point] = orig
+  def org(): Point = orig.elem
+  def org_uncheckinf(): FinitePoint = orig.elem match {
+    case InfinitePoint => throw new RuntimeException("org_uncheckinf giving inf")
+    case p:FinitePoint => p
+  }
+  def orgNotInf(): FinitePoint = org_uncheckinf()
+  def org_cell(): Cell[Point] = orig
 
-  def get_dst(): Point = sym().get_org()
-  def get_dst_cell(): Cell[Point] = sym().get_org_cell()
+  def dst(): Point = sym().org()
+  def dst_uncheckinf(): FinitePoint = sym.orig.elem match {
+    case InfinitePoint => throw new RuntimeException("dst_uncheckinf giving inf")
+    case p:FinitePoint => p
+  }
+  def dstNotInf(): FinitePoint = dst_uncheckinf()
+  def dst_cell(): Cell[Point] = sym().org_cell()
 
-  def left(): Point = this.tor().get_org()
-  def left_cell(): Cell[Point] = this.tor().get_org_cell()
+  def left(): Point = this.tor().org()
+  def left_cell(): Cell[Point] = this.tor().org_cell()
 
-  def right(): Point = this.rot().get_org()
-  def right_cell(): Cell[Point] = this.rot().get_org_cell()
+  def right(): Point = this.rot().org()
+  def right_cell(): Cell[Point] = this.rot().org_cell()
 
   def rot(): QuadEdge = _rot
   def sym(): QuadEdge = rot.rot
@@ -68,12 +81,16 @@ class QuadEdge(var orig: Cell[Point], var next: QuadEdge, var _rot: QuadEdge)
   def dprev(): QuadEdge = tor().onext().tor()
 
   def setNext(new_next: QuadEdge) = next = new_next
-  def setOrig(org: Point) = orig.set(org)
+  def setOrig(org: Point) = orig match {
+    case orig: MutableCell[Point] => orig.set(org)
+    case ImmutableCell(elem) => throw new RuntimeException("cannot change immutable cell")
+  }
+    
   def setOrigCell(org: Cell[Point]) = orig = org
   def setDest(dest: Point) = sym().setOrig(dest)
   def setDestCell(org: Cell[Point]) = sym().setOrigCell(org)
 
-  override def toString(): String = s"$get_org -> ${get_dst()}"
+  override def toString(): String = s"$org -> ${dst()}"
 
   def deleteEdge() = {
     QuadEdge.splice(this, this.oprev())
@@ -100,21 +117,21 @@ class QuadEdge(var orig: Cell[Point], var next: QuadEdge, var _rot: QuadEdge)
   def same_right_ring(rhs: QuadEdge) = this.rot().same_org_ring(rhs.rot())
   def same_left_ring(rhs: QuadEdge) = this.tor().same_org_ring(rhs.tor())
 
-  def maj_ring() = {
-    val r = this.right_ring()
-    if (is_closed_loop(r.map(_.tor))) {
-      val cr = Point.centroid(r.map(_.tor.orig.elem).toSet.toList)
-      val celcr = Cell(cr)
-      r.foreach(_.setOrigCell(celcr))
-    }
+  // def maj_ring() = {
+  //   val r = this.right_ring()
+  //   if (is_closed_loop(r.map(_.tor))) {
+  //     val cr = Point.centroid(r.map(_.tor.orig.elem).toSet.toList)
+  //     val celcr = Cell(cr)
+  //     r.foreach(_.setOrigCell(celcr))
+  //   }
 
-    val l = this.left_ring()
-    if (is_closed_loop(l.map(_.rot))) {
-      val cl = Point.centroid(l.map(_.rot.orig.elem).toSet.toList)
-      val celcl = Cell(cl)
-      l.foreach(_.setOrigCell(celcl))
-    }
-  }
+  //   val l = this.left_ring()
+  //   if (is_closed_loop(l.map(_.rot))) {
+  //     val cl = Point.centroid(l.map(_.rot.orig.elem).toSet.toList)
+  //     val celcl = Cell(cl)
+  //     l.foreach(_.setOrigCell(celcl))
+  //   }
+  // }
 
   def is_closed_loop(ring: List[QuadEdge]): Boolean = {
     @scala.annotation.tailrec
@@ -147,17 +164,17 @@ class QuadEdge(var orig: Cell[Point], var next: QuadEdge, var _rot: QuadEdge)
   def --->(rhs: QuadEdge) = this connectTo rhs
 
   def printAll() = {
-    println(lnext() + "   <-   " + get_dst() + "   <-   " + dnext())
+    println(lnext() + "   <-   " + dst() + "   <-   " + dnext())
     println("                                         ^")
     println("                                         |")
-    println(onext() + "   <-   " + get_org() + "   <-   " + rnext())
+    println(onext() + "   <-   " + org() + "   <-   " + rnext())
   }
 
   def printAllDual() = {
-    println(rot.lnext + "   <-   " + rot.get_dst + "   <-   " + rot.dnext)
+    println(rot.lnext + "   <-   " + rot.dst + "   <-   " + rot.dnext)
     println("                                         ^")
     println("                                         |")
-    println(rot.onext + "   <-   " + rot.get_org + "   <-   " + rot.rnext)
+    println(rot.onext + "   <-   " + rot.org + "   <-   " + rot.rnext)
   }
 
   override def iterator: Iterator[QuadEdge] = {
@@ -179,12 +196,34 @@ class QuadEdge(var orig: Cell[Point], var next: QuadEdge, var _rot: QuadEdge)
   }
 
   /** Strictly on the right side */
-  def rightof(X: Point): Boolean =
-    Point.ccw(X, this.get_dst(), this.get_org())
+  def rightof(X: FinitePoint): Boolean = {
+    val orgp = this.org() match {
+      case p: FinitePoint => p
+      case InfinitePoint =>
+        throw new RuntimeException("cannot pass infinite point")
+    }
+    val dstp = this.dst() match {
+      case p: FinitePoint => p
+      case InfinitePoint =>
+        throw new RuntimeException("cannot pass infinite point")
+    }
+    FinitePoint.ccw(X, dstp, orgp)
+  }
 
   /** Strictly on the left side */
-  def leftof(X: Point): Boolean =
-    Point.ccw(X, this.get_org(), this.get_dst())
+  def leftof(X: FinitePoint): Boolean = {
+    val orgp = this.org() match {
+      case p: FinitePoint => p
+      case InfinitePoint =>
+        throw new RuntimeException("cannot pass infinite point")
+    }
+    val dstp = this.dst() match {
+      case p: FinitePoint => p
+      case InfinitePoint =>
+        throw new RuntimeException("cannot pass infinite point")
+    }
+    FinitePoint.ccw(X, orgp, dstp)
+  }
 
 };
 
@@ -214,10 +253,10 @@ object QuadEdge {
 
   def make_edge(src: Point, dst: Point): QuadEdge = {
     val qe = make_edge()
-    val site_voro = Cell(Point.Infinity)
+    val site_voro = MutableCell(InfinitePoint)
 
-    qe.setOrigCell(Cell(src))
-    qe.setDestCell(Cell(dst))
+    qe.setOrigCell(MutableCell(src))
+    qe.setDestCell(MutableCell(dst))
 
     qe.rot().setOrigCell(site_voro)
     qe.rot().setDestCell(site_voro)
@@ -239,14 +278,14 @@ object QuadEdge {
     val (tex1, tex2) = (alpha.onext(), beta.onext())
     alpha.setNext(tex2); beta.setNext(tex1);
 
-    a.maj_ring() // useless :|, needs to think about it
-    b.maj_ring() // useless :|, needs to think about it
+    // a.maj_ring() // useless :|, needs to think about it
+    // b.maj_ring() // useless :|, needs to think about it
   }
 
   def connect(a: QuadEdge, b: QuadEdge): QuadEdge = {
-    val e = make_edge(a.get_dst(), b.get_org())
-    e.setOrig(a.get_dst())
-    e.setDest(b.get_org())
+    val e = make_edge(a.dst(), b.org())
+    e.setOrig(a.dst())
+    e.setDest(b.org())
 
     // println(s"link ${a.get_dst()} -> ${b.get_org()}")
     splice(e, a.lnext())
@@ -264,7 +303,7 @@ object QuadEdge {
     splice(e, a.lnext());
     splice(e.sym(), b.lnext());
 
-    e.setOrig(a.get_dst());
-    e.setDest(b.get_dst());
+    e.setOrig(a.dst());
+    e.setDest(b.dst());
   }
 }

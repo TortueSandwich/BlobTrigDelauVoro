@@ -7,8 +7,8 @@ object TestQuadEdge extends App {
   println("\u001b[92m\u001b[1mToute les assertions sont passées\u001b[0m")
 
   def test_splice() = {
-    val (p1, p2, p3) = (Point(0, 0), Point(1, 1), Point(1, 0))
-    val env = Cell(Point(80, 80))
+    val (p1, p2, p3) = (FinitePoint(0, 0), FinitePoint(1, 1), FinitePoint(1, 0))
+    val env = MutableCell(FinitePoint(80, 80))
     val a = QuadEdge.make_edge(p1, p2)
     val b = QuadEdge.make_edge(p2, p3)
 
@@ -42,7 +42,7 @@ object TestQuadEdge extends App {
     println(b.left_ring().size)
 
     // println("ajout de d")
-    // val p4 = Point(-1,1)
+    // val p4 = FinitePoint(-1,1)
     // val d = QuadEdge.make_edge(p1,p4)
     // QuadEdge.splice(d, a)
 
@@ -93,7 +93,7 @@ object TestQuadEdge extends App {
     println("ok pour test_splice()")
   }
   def test_other() = {
-    val (p1, p2, p3) = (Point(0, 0), Point(1, 0), Point(1, 1))
+    val (p1, p2, p3) = (FinitePoint(0, 0), FinitePoint(1, 0), FinitePoint(1, 1))
     val a = QuadEdge.make_edge(p1, p2)
     val b = QuadEdge.make_edge(p2, p3)
     // QuadEdge.touch(a,b)
@@ -103,17 +103,17 @@ object TestQuadEdge extends App {
     println(b.left() eq b.right())
     println(a.left() eq b.left())
     println("-----")
-    println(a.get_dst_cell() eq b.get_org_cell())
+    println(a.dst_cell() eq b.org_cell())
 
     QuadEdge.connect(b, a)
     println(a.left() eq a.right())
     println(b.left() eq b.right())
     println(a.left() eq b.left())
     println("-----")
-    println(b.get_dst_cell() eq a.get_org_cell())
+    println(b.dst_cell() eq a.org_cell())
 
-    // val a = QuadEdge.make_edge(Point(0,0), Point(1,0))
-    // val b = QuadEdge.make_edge(Point(0,1), Point(1,1))
+    // val a = QuadEdge.make_edge(FinitePoint(0,0), FinitePoint(1,0))
+    // val b = QuadEdge.make_edge(FinitePoint(0,1), FinitePoint(1,1))
     // println(a.left_cell())
     // println(b.left_cell())
     // val ex = QuadEdge.connect(a.sym(),b)
@@ -142,7 +142,7 @@ object TestQuadEdge extends App {
   def test_make() = {
     // eq est l'operateur de test de reference
 
-    val notloop = QuadEdge.make_edge(Point(0, 0), Point(1, 1))
+    val notloop = QuadEdge.make_edge(FinitePoint(0, 0), FinitePoint(1, 1))
     assert(notloop.lnext() eq notloop.rnext(), "1 not loop")
     assert(notloop.lnext() eq notloop.sym(), "2 not loop")
     assert(notloop.rnext() eq notloop.sym(), "3 not loop")
@@ -154,9 +154,9 @@ object TestQuadEdge extends App {
     // println(notloop.left_cell())
     // println(notloop.right_cell())
     assert(notloop.left_cell() eq notloop.right_cell(), "7 not loop")
-    assert(!(notloop.get_org_cell() eq notloop.get_dst_cell()), "8 not loop")
+    assert(!(notloop.org_cell() eq notloop.dst_cell()), "8 not loop")
 
-    val loop = QuadEdge.make_edge(Point(-2, -2), Point(-1, -1)).rot()
+    val loop = QuadEdge.make_edge(FinitePoint(-2, -2), FinitePoint(-1, -1)).rot()
     assert(loop.lnext() eq loop.rnext(), "1 loop")
     assert(loop.lnext() eq loop, "2 loop")
     assert(loop.rnext() eq loop, "3 loop")
@@ -168,7 +168,7 @@ object TestQuadEdge extends App {
     // println(loop.left_cell())
     // println(loop.right_cell())
     assert(!(loop.left_cell() eq loop.right_cell()), "7 loop")
-    assert(loop.get_org_cell() eq loop.get_dst_cell(), "8 loop")
+    assert(loop.org_cell() eq loop.dst_cell(), "8 loop")
 
     notloop.printAll()
 

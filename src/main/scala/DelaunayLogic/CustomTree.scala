@@ -5,13 +5,13 @@ private sealed trait Tree
 private case class Node(left: Tree, right: Tree) extends Tree
 
 /** group of 2 or 3 ordered element */
-private case class Leaf(elements: List[Point]) extends Tree
+private case class Leaf(elements: List[FinitePoint]) extends Tree
 
 private object Tree {
 
   /** Throw IllegalArgumentException si la liste contient des points dupliqués
     */
-  def apply(elements: List[Point]): Tree = {
+  def apply(elements: List[FinitePoint]): Tree = {
     val uniqueElements = elements.distinct
     if (uniqueElements.size != elements.size) {
       throw new IllegalArgumentException(
@@ -23,7 +23,7 @@ private object Tree {
     }
   }
 
-  private def recBuild(elements: List[Point]): Tree = {
+  private def recBuild(elements: List[FinitePoint]): Tree = {
     if (elements.length <= 3) {
       Leaf(elements)
     } else {
