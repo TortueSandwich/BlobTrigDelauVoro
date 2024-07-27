@@ -1,4 +1,3 @@
-
 object TestQuadEdge extends App {
   println("allo")
   // test_make()
@@ -6,14 +5,13 @@ object TestQuadEdge extends App {
   test_splice()
 
   println("\u001b[92m\u001b[1mToute les assertions sont passées\u001b[0m")
-  
+
   def test_splice() = {
-    val (p1, p2, p3) = (Point(0,0), Point(1,1), Point(1,0))
+    val (p1, p2, p3) = (Point(0, 0), Point(1, 1), Point(1, 0))
     val env = Cell(Point(80, 80))
     val a = QuadEdge.make_edge(p1, p2)
     val b = QuadEdge.make_edge(p2, p3)
 
-    
     // println(a.printAll())
     // println()
     // println(b.printAll())
@@ -21,7 +19,6 @@ object TestQuadEdge extends App {
     // println(a.right_ring())
     QuadEdge.splice(a.sym(), b)
 
-    
     println("------ BEFORE ------")
     println(a.org_ring())
     println(b.org_ring())
@@ -43,8 +40,7 @@ object TestQuadEdge extends App {
     println(b.org_ring())
     println(a.left_ring().size)
     println(b.left_ring().size)
-    
-    
+
     // println("ajout de d")
     // val p4 = Point(-1,1)
     // val d = QuadEdge.make_edge(p1,p4)
@@ -66,11 +62,8 @@ object TestQuadEdge extends App {
     // println(d.rot())
     // println(newqe)
 
-
     // println(a.left_ring())
     // println(a.right_ring())
-
-    
 
     // println(a.rot().get_org())
     // println(b.rot().get_org())
@@ -94,14 +87,13 @@ object TestQuadEdge extends App {
     // println(b.rot().rot().rot())
     // println(c.rot().rot().rot())
 
-
     // println(a.get_org() eq b.get_org())
     // println(b.left() eq b.right())
     // println(a.left() eq a.right())
     println("ok pour test_splice()")
   }
   def test_other() = {
-    val (p1, p2, p3) = (Point(0,0), Point(1,0), Point(1,1))
+    val (p1, p2, p3) = (Point(0, 0), Point(1, 0), Point(1, 1))
     val a = QuadEdge.make_edge(p1, p2)
     val b = QuadEdge.make_edge(p2, p3)
     // QuadEdge.touch(a,b)
@@ -113,7 +105,7 @@ object TestQuadEdge extends App {
     println("-----")
     println(a.get_dst_cell() eq b.get_org_cell())
 
-    QuadEdge.connect(b,a)
+    QuadEdge.connect(b, a)
     println(a.left() eq a.right())
     println(b.left() eq b.right())
     println(a.left() eq b.left())
@@ -177,7 +169,6 @@ object TestQuadEdge extends App {
     // println(loop.right_cell())
     assert(!(loop.left_cell() eq loop.right_cell()), "7 loop")
     assert(loop.get_org_cell() eq loop.get_dst_cell(), "8 loop")
-
 
     notloop.printAll()
 

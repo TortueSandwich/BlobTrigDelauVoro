@@ -47,7 +47,7 @@ case class Point(val x: Double, val y: Double) extends Ordered[Point] {
     !(hasNeg && hasPos)
   }
 
-  def scale(a: Double): Point = Point(this.x*a, this.y*a)
+  def scale(a: Double): Point = Point(this.x * a, this.y * a)
 }
 
 object Point {

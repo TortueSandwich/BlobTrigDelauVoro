@@ -182,7 +182,8 @@ class Triangulation2DView extends BorderPane {
     }
     assume(a != Point.Infinity && b == Point.Infinity, "wtf")
 
-    val (pA, pB, pC) = (walle.get_org(), walle.get_dst(), walle.oprev().get_dst())
+    val (pA, pB, pC) =
+      (walle.get_org(), walle.get_dst(), walle.oprev().get_dst())
 
     val symPoint = Segment(pA, pB).middle
     val scaledA = scaleCo(a)
@@ -210,7 +211,7 @@ class Triangulation2DView extends BorderPane {
     lines.flatten { case (a, b) => Seq(a, b) }.foreach { p =>
       val Point(x, y) = scaleCo(p)
       val r = 2.0
-      gc.fillOval(x - r/2, y - r/2, r, r)
+      gc.fillOval(x - r / 2, y - r / 2, r, r)
     }
   }
 

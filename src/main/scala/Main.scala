@@ -1,4 +1,3 @@
-
 import scalafx.scene.layout.Pane
 import scalafx.scene.shape.Circle
 import scalafx.scene.shape.Line
@@ -17,7 +16,6 @@ object Main extends App {
   val pex = p.copy()
   println(p eq pex)
 
-
   // val (result1, result2) = Delaunay.delaunaise(points)
 
   // println(result1)
@@ -32,4 +30,3 @@ object Main extends App {
   // println(s"Triangle: $p1 -> $p2 -> $p3")
   // }
 }
-

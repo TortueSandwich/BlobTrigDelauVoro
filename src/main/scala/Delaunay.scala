@@ -1,48 +1,52 @@
 import scala.util.control.Breaks._
 
 object Delaunay {
-def TriangulateDelaunay(points: List[Point]): QuadEdge = {
-  val root = Tree.apply(points)
-  val (resEdge, _) = divideAndConquerDelaunay(root)
+  def TriangulateDelaunay(points: List[Point]): QuadEdge = {
+    val root = Tree.apply(points)
+    val (resEdge, _) = divideAndConquerDelaunay(root)
 
-  val edgeSets: Set[Set[QuadEdge]] = resEdge.iterator.flatMap(e => Seq(e.right_ring().toSet, e.left_ring().toSet)).toSet
+    val edgeSets: Set[Set[QuadEdge]] = resEdge.iterator
+      .flatMap(e => Seq(e.right_ring().toSet, e.left_ring().toSet))
+      .toSet
 
-  if (edgeSets.size == 2 && edgeSets.forall(_.size == 3)) {
-    edgeSets.toSeq match {
-      case Seq(set1, set2) =>
-        val pointsInSet1 = set1.flatMap(e => Seq(e.tor.get_org(), e.tor.get_dst())).toSet.toSeq
-        pointsInSet1 match {
-          case Seq(p1, p2, p3) => {
+    if (edgeSets.size == 2 && edgeSets.forall(_.size == 3)) {
+      edgeSets.toSeq match {
+        case Seq(set1, set2) =>
+          val pointsInSet1 =
+            set1.flatMap(e => Seq(e.tor.get_org(), e.tor.get_dst())).toSet.toSeq
+          pointsInSet1 match {
+            case Seq(p1, p2, p3) => {
 
-            val circumcenter = Cell(Point.circumcenter(p1, p2, p3))
-            set1.foreach(_.setOrigCell(circumcenter))
-            set1.foreach(_.setDestCell(Cell(Point.Infinity)))
+              val circumcenter = Cell(Point.circumcenter(p1, p2, p3))
+              set1.foreach(_.setOrigCell(circumcenter))
+              set1.foreach(_.setDestCell(Cell(Point.Infinity)))
+            }
+            case _ => println("!!!\nWTF22222\n!!!")
           }
-          case _ => println("!!!\nWTF22222\n!!!")
-        }
-      case _ => println("!!!\nWTF\n!!!")
+        case _ => println("!!!\nWTF\n!!!")
+      }
+      return resEdge
     }
-    return resEdge
-  }
 
-  edgeSets.foreach { edgeSet =>
-    if (edgeSet.size == 3) {
-      val points = edgeSet.flatMap(e => Seq(e.rot().get_org(), e.rot().get_dst())).toSet.toSeq
-      if (points.size == 3) {
-        val circumcenter = Point.circumcenter(points(0), points(1), points(2))
-        val cell = Cell(circumcenter)
+    edgeSets.foreach { edgeSet =>
+      if (edgeSet.size == 3) {
+        val points = edgeSet
+          .flatMap(e => Seq(e.rot().get_org(), e.rot().get_dst()))
+          .toSet
+          .toSeq
+        if (points.size == 3) {
+          val circumcenter = Point.circumcenter(points(0), points(1), points(2))
+          val cell = Cell(circumcenter)
+          edgeSet.foreach(_.setOrigCell(cell))
+        }
+      } else {
+        val cell = Cell(Point.Infinity)
         edgeSet.foreach(_.setOrigCell(cell))
       }
-    } else {
-      val cell = Cell(Point.Infinity)
-      edgeSet.foreach(_.setOrigCell(cell))
     }
+
+    resEdge
   }
-
-  resEdge
-}
-
-
 
   /** return the leftmost and right most edge of the hull in clock wise
     * ```txt
@@ -203,7 +207,7 @@ def TriangulateDelaunay(points: List[Point]): QuadEdge = {
   def findCommonTangeant(ldi: QuadEdge, rdi: QuadEdge): (QuadEdge, QuadEdge) = {
     if (ldi.leftof(rdi.get_org())) {
       findCommonTangeant(ldi.lnext(), rdi)
-    } else if (rdi.rightof(ldi.get_org() )) {
+    } else if (rdi.rightof(ldi.get_org())) {
       findCommonTangeant(ldi, rdi.rprev())
     } else {
       (ldi, rdi)

@@ -18,14 +18,21 @@ object PointsAndLinesApp extends JFXApp3 {
     // val points = List( Point(-5, -5), Point(-5, 5), Point(-3, 0), Point(5, 5), Point(5, -5), Point(3, 0))
     val points = List(
       // Point(-1,0), Point(-1,1), Point(-0,0),
-      // Point(1,0), 
+      // Point(1,0),
       // Point(2,0), // Point(2,1),
       // Point(4,-1), Point(3,-2), Point(5,-2),
       // Point(10,3), Point(9,1), Point(11,2),
 
-
-      Point(0,1), Point(1,0), Point(1,2), Point(1,3), Point(2,1), 
-      Point(3,3), Point(4,2), Point(5,0), Point(5,1), Point(5,3),
+      Point(0, 1),
+      Point(1, 0),
+      Point(1, 2),
+      Point(1, 3),
+      Point(2, 1),
+      Point(3, 3),
+      Point(4, 2),
+      Point(5, 0),
+      Point(5, 1),
+      Point(5, 3)
 
       // Point(-3,3), Point(-4,2), Point(-5,0), Point(-5,1), Point(-5,3),
     )
@@ -37,11 +44,11 @@ object PointsAndLinesApp extends JFXApp3 {
     )
     println("FINIIIIII")
     println(result)
-    val truc = result.iterator.flatMap(e => Seq(e.right_ring().toSet, e.left_ring().toSet)).toSet
+    val truc = result.iterator
+      .flatMap(e => Seq(e.right_ring().toSet, e.left_ring().toSet))
+      .toSet
     truc.foreach(s => if (s.size != 3) println(s.size))
     // println(result2.isDelaunay())
-
-
 
     stage = new JFXApp3.PrimaryStage {
       title = "Points and Lines"
@@ -61,7 +68,9 @@ object PointsAndLinesApp extends JFXApp3 {
 
       val pane = new ViewQuadEdge(qe, infoBar)
       pane.prefWidthProperty().bind(this.widthProperty())
-      pane.prefHeightProperty().bind(this.heightProperty().subtract(infoBox.heightProperty()))
+      pane
+        .prefHeightProperty()
+        .bind(this.heightProperty().subtract(infoBox.heightProperty()))
 
       val vbox = new VBox {
         children = Seq(pane, infoBox)
@@ -71,15 +80,14 @@ object PointsAndLinesApp extends JFXApp3 {
     }
   }
 
-
-    def generateHexagonalLattice(rows: Int, cols: Int, a: Double): List[Point] = {
+  def generateHexagonalLattice(rows: Int, cols: Int, a: Double): List[Point] = {
     var points = List[Point]()
-    val sqrt3over2 = math.sqrt(3)/ 2
+    val sqrt3over2 = math.sqrt(3) / 2
 
     for (i <- 0 until rows) {
       for (j <- 0 until cols) {
-        val x = a * (i + j%2 * 0.5)
-        val y = a * (j * sqrt3over2 )
+        val x = a * (i + j % 2 * 0.5)
+        val y = a * (j * sqrt3over2)
         points = Point(x, y) :: points
       }
     }

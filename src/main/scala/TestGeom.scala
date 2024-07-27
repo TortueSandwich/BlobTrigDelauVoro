@@ -1,25 +1,24 @@
 object TestGeom extends App {
-  
-  
+
   test_colineaire()
   test_CCW()
   // test_incircle()
   println("\u001b[92m\u001b[1mToute les assertions sont passées\u001b[0m")
 
-    def test_CCW() {
+  def test_CCW() {
     val O = Point(0.0, 0.0)
     val A = Point(0.0, 1.0)
     val B = Point(1.0, 0.0)
     val C = Point(0.0, -1.0)
-    assert(!Point.ccw(O,A,B), "OAB")
-    assert(!Point.ccw(A,B,O), "ABO")
-    assert(!Point.ccw(B,O,A), "BOA")
-    assert(Point.ccw(O,B,A), "OBA")
-    assert(!Point.ccw(O,A,C), "OAC")
-    assert(!Point.ccw(O,B,C), "OBC")
+    assert(!Point.ccw(O, A, B), "OAB")
+    assert(!Point.ccw(A, B, O), "ABO")
+    assert(!Point.ccw(B, O, A), "BOA")
+    assert(Point.ccw(O, B, A), "OBA")
+    assert(!Point.ccw(O, A, C), "OAC")
+    assert(!Point.ccw(O, B, C), "OBC")
 
-    assert(!Point.ccw(Point(1,0),Point(-1,0), Point(-2,2)), "Test unitaire")
-    
+    assert(!Point.ccw(Point(1, 0), Point(-1, 0), Point(-2, 2)), "Test unitaire")
+
     println("test test_CCW() ok")
   }
 
@@ -28,14 +27,12 @@ object TestGeom extends App {
     val B = Point(0.0, 2.0)
     val C = Point(0.0, 5.0)
     val D = Point(1.0, 0.0)
-    assert(Point.areCollinear(A,B,C), "c'est colineaire1")
-    assert(Point.areCollinear(A,C,B), "c'est colineaire2")
-    assert(Point.areCollinear(C,A,B), "c'est colineaire3")
-    assert(!Point.areCollinear(A,B,D), "ce n'dest pas colinire")
+    assert(Point.areCollinear(A, B, C), "c'est colineaire1")
+    assert(Point.areCollinear(A, C, B), "c'est colineaire2")
+    assert(Point.areCollinear(C, A, B), "c'est colineaire3")
+    assert(!Point.areCollinear(A, B, D), "ce n'dest pas colinire")
     println("test test_colineaire() ok")
   }
-
-
 
   def test_incircle() {
     val A = Point(0.0, 0.0)

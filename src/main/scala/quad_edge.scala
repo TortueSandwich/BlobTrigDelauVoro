@@ -6,9 +6,9 @@ import scala.util.control.Breaks._
 import scala.collection.mutable
 import scala.annotation.tailrec
 
-/** Represents an edge in a subdivision of a space and its dual. A kind 
-  * of parallel crossed double linked list
-  * 
+/** Represents an edge in a subdivision of a space and its dual. A kind of
+  * parallel crossed double linked list
+  *
   * ```txt
   * Lnext | Dnext         Dprev | Rprev
   * <--- dst <---         ---> dst --->
@@ -18,12 +18,13 @@ import scala.annotation.tailrec
   * Onext | Rnext         Lprev | Oprev
   * ```
   *
-  * qe.onext.onext.onext.onext... gives every edge that are connected to the Org,
-  * all qe, qe.onext, qe.onext.onext have the same Org, it's spinning around Org
+  * qe.onext.onext.onext.onext... gives every edge that are connected to the
+  * Org, all qe, qe.onext, qe.onext.onext have the same Org, it's spinning
+  * around Org
   *
   * To place yourself on the dual, just call .rot() This structure does not
-  * depend on the coordinate of the point, only on the relationships between the points
-  * and the surfaces
+  * depend on the coordinate of the point, only on the relationships between the
+  * points and the surfaces
   *
   * ```txt
   *         dst
@@ -177,7 +178,7 @@ class QuadEdge(var orig: Cell[Point], var next: QuadEdge, var _rot: QuadEdge)
     v.iterator
   }
 
-    /** Strictly on the right side */
+  /** Strictly on the right side */
   def rightof(X: Point): Boolean =
     Point.ccw(X, this.get_dst(), this.get_org())
 
@@ -192,10 +193,10 @@ object QuadEdge {
   def apply(src: Point, dst: Point): QuadEdge = make_edge(src, dst)
 
   /** Creation primitive
-   * 
-   * A line in an infinite space. 
-   * The dual is an infinite line cutting the space in half
-  */
+    *
+    * A line in an infinite space. The dual is an infinite line cutting the
+    * space in half
+    */
   private def make_edge(): QuadEdge = {
     val q0 = new QuadEdge(null, null, null);
     val e0 = new QuadEdge(null, null, null);
@@ -211,7 +212,6 @@ object QuadEdge {
     return q0;
   }
 
-
   def make_edge(src: Point, dst: Point): QuadEdge = {
     val qe = make_edge()
     val site_voro = Cell(Point.Infinity)
@@ -225,14 +225,12 @@ object QuadEdge {
   }
 
   /** Operation primitive
-   * 
-   * Let's be easy
-   * a.Org = b.Org  <=SPLICE!=> a.Org != b.Org
-   * independently
-   * a.left = b.left  <=SPLICE!=> a.left != b.left
-   * 
-   * achieved by splitting/fusionning onexts
-  */
+    *
+    * Let's be easy a.Org = b.Org <=SPLICE!=> a.Org != b.Org independently
+    * a.left = b.left <=SPLICE!=> a.left != b.left
+    *
+    * achieved by splitting/fusionning onexts
+    */
   def splice(a: QuadEdge, b: QuadEdge) = {
     val (alpha, beta) = (a.onext().rot(), b.onext().rot())
     val (t1, t2) = (a.onext(), b.onext())

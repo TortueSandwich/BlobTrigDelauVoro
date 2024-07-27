@@ -8,8 +8,12 @@ import scalafx.scene.paint.CycleMethod
 import scalafx.scene.paint.Stops
 class ViewQuadEdge(val qe: QuadEdge, val infoBar: Text) extends Pane {
   private val paddingQE: Double = 50
-  private val points: Set[Point] = qe.iterator.foldLeft(Set[Point]())((s,e) =>  s + e.get_org() + e.get_dst())
-  private val lines: Set[(Point, Point)] = qe.iterator.foldLeft(Set[(Point, Point)]())((s,e) =>  s + ((e.get_org(), e.get_dst())))
+  private val points: Set[Point] =
+    qe.iterator.foldLeft(Set[Point]())((s, e) => s + e.get_org() + e.get_dst())
+  private val lines: Set[(Point, Point)] =
+    qe.iterator.foldLeft(Set[(Point, Point)]())((s, e) =>
+      s + ((e.get_org(), e.get_dst()))
+    )
 
   // println("Extracted Points: " + points.mkString(", "))
   // println("Extracted Lines: " + lines.mkString(",\n"))
@@ -42,7 +46,7 @@ class ViewQuadEdge(val qe: QuadEdge, val infoBar: Text) extends Pane {
         y = mycenterY
         fill = Color.Black
       }
-      Seq(circle)//, text)
+      Seq(circle) // , text)
     }
   }
 
