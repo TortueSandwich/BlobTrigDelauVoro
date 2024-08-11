@@ -29,6 +29,14 @@ class ScalafxApp extends BorderPane {
     )
   }
 
+  def calculateBounds(points: Seq[FinitePoint]): FinitePoint = {
+    val minX = points.map(_.x).min
+    val maxX = points.map(_.x).max
+    val minY = points.map(_.y).min
+    val maxY = points.map(_.y).max
+    FinitePoint(maxX - minX, maxY - minY)
+  }
+
   private val selection = new ObservableHashSet[FinitePoint].empty
   private val coordinatesLabel = new Label(resetLabel())
   def resetLabel(): String =
@@ -42,18 +50,32 @@ class ScalafxApp extends BorderPane {
     Delaunay.TriangulateDelaunay(points.get.toList)
   )
 
-  val minSize = Bindings.min(
+  val boundsSize = Bindings.createObjectBinding[FinitePoint](
+    () => calculateBounds(points.get),
+    points
+  )
+
+  val minSize = Bindings.createDoubleBinding(
+    () =>
+      Math.min(
+        drawPane.width.value / boundsSize.get().x,
+        drawPane.height.value / boundsSize.get().y
+      ),
     drawPane.widthProperty,
-    drawPane.heightProperty
+    drawPane.heightProperty,
+    boundsSize
   )
 
   val offsetVec = Bindings.createObjectBinding[FinitePoint](
-    () =>
+    () => {
+      val bounds = calculateBounds(points.get)
       FinitePoint(
-        (drawPane.widthProperty.toDouble - minSize.doubleValue) / 2,
-        (drawPane.heightProperty.toDouble - minSize.doubleValue) / 2
-      ),
-    minSize
+        (drawPane.widthProperty.toDouble - bounds.x * minSize.doubleValue) / 2,
+        (drawPane.heightProperty.toDouble - bounds.y * minSize.doubleValue) / 2
+      )
+    },
+    minSize,
+    points
   )
 
   val scalePoint = (p: FinitePoint) =>
@@ -108,6 +130,7 @@ class ScalafxApp extends BorderPane {
 
       val nbPoints = numPointsField.text.value.toInt
       points.set(FinitePoint.generatePoints(nbPoints).toSeq)
+      // points.set(Consts.points)
       quadedge.set(Delaunay.TriangulateDelaunay(points.get.toList))
       lines.set(
         quadedge.get.iterator.map(e => (e.orgNotInf(), e.dstNotInf())).toSeq
