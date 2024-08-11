@@ -20,6 +20,7 @@ import scala.collection.mutable
 import scalafx.collections.ObservableHashSet
 import scalafx.collections.ObservableArray.Change
 import scalafx.beans.property.Property
+import scalafx.beans.property.ReadOnlyBooleanProperty
 
 class ScalafxApp extends BorderPane {
   private val drawPane = new Pane {
@@ -28,7 +29,11 @@ class ScalafxApp extends BorderPane {
     )
   }
 
-  private val selection = new ObservableHashSet[FinitePoint]
+  private val selection = new ObservableHashSet[FinitePoint].empty
+  private val coordinatesLabel = new Label(resetLabel())
+  def resetLabel(): String =
+    if (selection.isEmpty) "Nothing"
+    else "Selected Points: " + selection.map(formatpt).mkString(", ")
 
   private val points = ObjectProperty(FinitePoint.generatePoints(15).toSeq)
   private val lines = ObjectProperty(Seq.empty[(FinitePoint, FinitePoint)])
@@ -125,14 +130,20 @@ class ScalafxApp extends BorderPane {
     )
   }
 
-  top = toolBar
+  private val bottomBar: ToolBar = new ToolBar {
+    items = Seq(coordinatesLabel)
+  }
+
+  // the order is important, so the draw doesnt overlap
   center = drawPane
+  top = toolBar
+  bottom = bottomBar
 
   def drawPoints() =
     points.value.foreach { point =>
       {
         val p = scalePoint(point)
-        val circle = new Circle {
+        val circle: Circle = new Circle {
           radius = 7
           fill <== when(
             Bindings.createBooleanBinding(
@@ -148,7 +159,13 @@ class ScalafxApp extends BorderPane {
             else selection.add(point)
             drawAdditionalObjects()
           }
+
+          onMouseEntered =
+            (e: MouseEvent) => coordinatesLabel.text = formatpt(point)
+          onMouseExited =
+            (e: MouseEvent) => coordinatesLabel.text = resetLabel()
         }
+
         drawPane.children.add(circle)
         circle.toFront()
       }
@@ -166,6 +183,11 @@ class ScalafxApp extends BorderPane {
           endY <== getf(_._2.y)
           stroke = Color.Blue
           visible <== drawTriangulationCheckBox.selected
+          onMouseEntered = (ev: MouseEvent) =>
+            coordinatesLabel.text =
+              s"Line from ${formatpt(p1)} to ${formatpt(p2)}"
+          onMouseExited =
+            (e: MouseEvent) => coordinatesLabel.text = resetLabel()
         }
         drawPane.getChildren.add(line)
       }
@@ -187,6 +209,11 @@ class ScalafxApp extends BorderPane {
             endX <== getf(_._2.x)
             endY <== getf(_._2.y)
             stroke = Color.Green
+            onMouseEntered = (ev: MouseEvent) =>
+              coordinatesLabel.text =
+                s"Dual line of ${formatpt(e.rot.orgNotInf)} to ${formatpt(e.tor.orgNotInf)}"
+            onMouseExited =
+              (e: MouseEvent) => coordinatesLabel.text = resetLabel()
           }
 
         }
@@ -204,6 +231,11 @@ class ScalafxApp extends BorderPane {
             endX <== getf(_._2.x)
             endY <== getf(_._2.y)
             stroke = Color.Green
+            onMouseEntered = (ev: MouseEvent) =>
+              coordinatesLabel.text =
+                s"Line medatrice of ${formatpt(e.rot.orgNotInf)} to ${formatpt(e.tor.orgNotInf)}"
+            onMouseExited =
+              (ev: MouseEvent) => coordinatesLabel.text = resetLabel()
           }
         }
 
@@ -254,6 +286,11 @@ class ScalafxApp extends BorderPane {
             endX <== getf(_._2.x)
             endY <== getf(_._2.y)
             stroke = Color.Green
+            onMouseEntered = (ev: MouseEvent) =>
+              coordinatesLabel.text =
+                s"Dual line of ${formatpt(e.rot.orgNotInf)} to ${formatpt(e.tor.orgNotInf)}"
+            onMouseExited =
+              (ev: MouseEvent) => coordinatesLabel.text = resetLabel()
           }
         }
         case _ =>
@@ -263,6 +300,8 @@ class ScalafxApp extends BorderPane {
       drawPane.getChildren.add(l)
 
     })
+
+  private def formatpt(p: FinitePoint) = f"(${p.x}%.2f, ${p.y}%.2f)"
 
   private def clipLineToPane(
       p1: FinitePoint,
@@ -353,6 +392,10 @@ class ScalafxApp extends BorderPane {
       endX <== getf(_._2.x)
       endY <== getf(_._2.y)
       stroke = Color.Black
+      onMouseEntered = (ev: MouseEvent) =>
+        coordinatesLabel.text =
+          s"Line passing by ${formatpt(p1)} and ${formatpt(p2)}"
+      onMouseExited = (ev: MouseEvent) => coordinatesLabel.text = resetLabel()
     }
 
   }
@@ -379,7 +422,8 @@ class ScalafxApp extends BorderPane {
         } else {
           val center = FinitePoint.circumcenter(a, b, c)
           val scaledcenter = scalePoint(center)
-          val getposcenter = (f: FinitePoint => Double) => createDoubleBinding(() => f(scaledcenter.get), scaledcenter)
+          val getposcenter = (f: FinitePoint => Double) =>
+            createDoubleBinding(() => f(scaledcenter.get), scaledcenter)
           val scaledA = scalePoint(a)
           new Circle {
             radius <== Bindings.createDoubleBinding(
@@ -391,6 +435,11 @@ class ScalafxApp extends BorderPane {
             centerY <== getposcenter(_.y)
             stroke = Color.Black
             fill = Color.Transparent
+            onMouseEntered = (ev: MouseEvent) =>
+              coordinatesLabel.text =
+                s"Circumcenter of ${formatpt(a)}, ${formatpt(b)} and ${formatpt(c)}"
+            onMouseExited = (ev: MouseEvent) =>
+              coordinatesLabel.text = resetLabel()
           }
         }
         drawPane.children.add(shap);
