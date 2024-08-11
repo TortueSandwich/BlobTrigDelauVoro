@@ -1,8 +1,10 @@
 object Delaunay {
-  def TriangulateDelaunay(points: List[FinitePoint]): QuadEdge = {
+  def TriangulateDelaunay(points: List[FinitePoint]): QuadEdge = TriangulateDelaunay(points, true)
+
+  def TriangulateDelaunay(points: List[FinitePoint], vornoise: Boolean): QuadEdge = {
     val root = Tree.apply(points)
     val (resEdge, _) = divideAndConquerDelaunay(root)
-    setVoronoiDual(resEdge)
+    if (vornoise) setVoronoiDual(resEdge)
     resEdge
   }
 

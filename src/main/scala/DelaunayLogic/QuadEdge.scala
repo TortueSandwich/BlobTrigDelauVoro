@@ -45,16 +45,18 @@ class QuadEdge(
 
   def org(): Point = orig.elem
   def org_uncheckinf(): FinitePoint = orig.elem match {
-    case InfinitePoint => throw new RuntimeException("org_uncheckinf giving inf")
-    case p:FinitePoint => p
+    case InfinitePoint =>
+      throw new RuntimeException("org_uncheckinf giving inf")
+    case p: FinitePoint => p
   }
   def orgNotInf(): FinitePoint = org_uncheckinf()
   def org_cell(): Cell[Point] = orig
 
   def dst(): Point = sym().org()
   def dst_uncheckinf(): FinitePoint = sym.orig.elem match {
-    case InfinitePoint => throw new RuntimeException("dst_uncheckinf giving inf")
-    case p:FinitePoint => p
+    case InfinitePoint =>
+      throw new RuntimeException("dst_uncheckinf giving inf")
+    case p: FinitePoint => p
   }
   def dstNotInf(): FinitePoint = dst_uncheckinf()
   def dst_cell(): Cell[Point] = sym().org_cell()
@@ -83,9 +85,10 @@ class QuadEdge(
   def setNext(new_next: QuadEdge) = next = new_next
   def setOrig(org: Point) = orig match {
     case orig: MutableCell[Point] => orig.set(org)
-    case ImmutableCell(elem) => throw new RuntimeException("cannot change immutable cell")
+    case ImmutableCell(elem) =>
+      throw new RuntimeException("cannot change immutable cell")
   }
-    
+
   def setOrigCell(org: Cell[Point]) = orig = org
   def setDest(dest: Point) = sym().setOrig(dest)
   def setDestCell(org: Cell[Point]) = sym().setOrigCell(org)
@@ -95,6 +98,262 @@ class QuadEdge(
   def deleteEdge() = {
     QuadEdge.splice(this, this.oprev())
     QuadEdge.splice(this.sym(), this.sym.oprev())
+  }
+
+  def getExternalHull(): Set[QuadEdge] = {
+    val edgeSets: Set[Set[QuadEdge]] = this.iterator
+      .flatMap(e => Seq(e.left_ring().toSet, e.right_ring().toSet))
+      .toSet
+
+    val t = edgeSets.iterator.filterNot(_.size == 3).map(_.map(_.rot)).toSeq
+    // println("wtffffff")
+    // println(t.size)
+    // t.foreach(println)
+    // println("wtffffff")
+    assert(t.size == 1)
+    return t(0)
+  }
+
+  // val valid = !FinitePoint.ccw(next, curr, prev) && QuadEdge.make_edge(next, prev).rightof(e.orgNotInf())
+
+  def deleteEdgeFromTriangulationSPECIAL(): Unit = {
+    val toDelete = this.orgNotInf()
+    val orgRing = this.org_ring()
+    val externalHullEdges = getExternalHull()
+    val externalNeighbors = orgRing
+      .filter(e =>
+        externalHullEdges.contains(e) || externalHullEdges.contains(e.sym)
+      )
+      .sortBy(_.dstNotInf())(CounterClockwiseComparator(toDelete))
+    if (externalNeighbors.size != 2) {
+      throw new RuntimeException("Expected exactly two external neighbors.")
+    }
+    val (startEdge, endEdge) = (externalNeighbors.head, externalNeighbors.last)
+    val startPoint = startEdge.dstNotInf()
+    val endPoint = endEdge.dstNotInf()
+    val (beforeStart, afterStart) = orgRing.span(_.dstNotInf() != startPoint)
+    val rearrangedEdges = afterStart ++ beforeStart
+    (rearrangedEdges).foreach(println)
+    val pots = rearrangedEdges.map(_.dstNotInf())
+    def isCCW(
+        prev: FinitePoint,
+        mid: FinitePoint,
+        next: FinitePoint
+    ): Boolean = {
+      FinitePoint.ccw(prev, mid, next)
+    }
+    // println(s"pots $pots")
+
+    val ccwSubLists: List[List[(FinitePoint, FinitePoint, FinitePoint)]] =
+      pots
+        .sliding(3)
+        .collect { case List(p, c, n) => (p, c, n) }
+        .foldLeft(List[List[(FinitePoint, FinitePoint, FinitePoint)]]()) {
+          (acc, cpl) =>
+            cpl match {
+              case (p, c, n) if !isCCW(p, c, n) =>
+                acc match {
+                  case Nil =>
+                    List(List((p, c, n)))
+                  case head :: tail =>
+                    if (head.last._2 == p) {
+                      (head :+ (p, c, n)) :: tail
+                    } else {
+                      List((p, c, n)) :: acc
+                    }
+                }
+              case _ => acc
+            }
+        }
+        .reverse
+
+    ccwSubLists.foreach { subList =>
+      println("Sous-liste CCW maximale:")
+      subList.foreach(println)
+    }
+
+    
+
+    // closing
+    val lastPoint = rearrangedEdges.last.dstNotInf()
+    val firstPoint = rearrangedEdges.head.dstNotInf()
+    val closingEdge = QuadEdge.make_edge(lastPoint, firstPoint)
+    val pointsToCheck = pots.drop(1).dropRight(1)
+    if (pointsToCheck.forall(p => closingEdge.rightof(p))) {
+      QuadEdge.connect(endEdge.dnext(), startEdge.lnext())
+    } 
+
+    rearrangedEdges.foreach(_.deleteEdge())
+
+  }
+
+  private def calculateCircumcenterDistance(
+          preve: QuadEdge,
+          e: QuadEdge,
+          nexte: QuadEdge
+      ): ((QuadEdge, QuadEdge, QuadEdge), Double) = {
+        val prev = preve.dstNotInf()
+        val curr = e.dstNotInf()
+        val next = nexte.dstNotInf()
+        val circ = if (FinitePoint.areCollinear(prev, curr, next)) {
+          Segment(prev, next).middle
+        } else FinitePoint.circumcenter(curr, next, prev)
+        ((preve, e, nexte), FinitePoint.euclidian(e.dstNotInf(), circ))
+      }
+
+  def deleteEdgeFromTriangulation(): Unit = {
+    val ptsFromHull =
+      getExternalHull().flatMap(q => q.orgNotInf :: q.dstNotInf() :: Nil).toSet
+    if (ptsFromHull.contains(this.orgNotInf())) {
+      println("cas spécial")
+      this.deleteEdgeFromTriangulationSPECIAL()
+    } else {
+      println("cas Facile")
+      val toDelete = this.orgNotInf()
+      val orgRing = this.org_ring()
+      var orgRingEdges =
+        orgRing.sortBy(_.dstNotInf())(CounterClockwiseComparator(toDelete))
+      val kp = orgRingEdges.size
+
+      while (orgRingEdges.size > 3) {
+        val k = orgRingEdges.size
+        val idxs = (1 to k).map(i => Seq(i - 1, i % k, (i + 1) % k))
+        val m = idxs.map(cpl => cpl.map(orgRingEdges.apply))
+        val edgeData = m.map(cpl => {
+          val Seq(p, c, n) = cpl
+          val res = calculateCircumcenterDistance(p, c, n)
+          res
+        })
+        val v = edgeData
+          .filter(cpl => {
+            val es = cpl._1
+            val (p, c, n) = es
+            FinitePoint
+              .ccw(p.dstNotInf(), c.dstNotInf(), n.dstNotInf()) && QuadEdge
+              .make_edge(n.dstNotInf(), p.dstNotInf)
+              .rightof(c.orgNotInf())
+          })
+          .distinct
+
+        val opt = v.minByOption(_._2)
+        opt match {
+          case Some((minEdge, _)) =>
+            QuadEdge.swap(minEdge._2)
+            orgRingEdges = orgRingEdges.filterNot(e => e == minEdge._2)
+          case None => {
+            orgRingEdges.foreach(_.deleteEdge())
+            return
+          }
+        }
+      }
+      orgRingEdges.foreach(_.deleteEdge())
+
+    }
+  }
+
+  def deleteEdgeFromTriangulationEX(): Unit = {
+    var orgRingEdges = this
+      .org_ring()
+      .sortBy(_.dstNotInf())(CounterClockwiseComparator(this.orgNotInf()))
+    println(orgRingEdges.map(_.dstNotInf()))
+    val k = orgRingEdges.size
+    assume(
+      (0 to k - 2).forall(i =>
+        FinitePoint.ccw(
+          orgRingEdges(i + 1).dstNotInf(),
+          this.orgNotInf(),
+          orgRingEdges(i).dstNotInf()
+        )
+      ),
+      "not sorted in CCW"
+    )
+
+    // while (orgRingEdges.size > 3) {
+
+  }
+
+  def deleteEdgeFromTriangulationEX2(): Unit = {
+    def calculateCircumcenterDistance(
+        preve: QuadEdge,
+        e: QuadEdge,
+        nexte: QuadEdge
+    ): ((QuadEdge, QuadEdge, QuadEdge), Double) = {
+      val prev = preve.dstNotInf()
+      val curr = e.dstNotInf()
+      val next = nexte.dstNotInf()
+      val circ = if (FinitePoint.areCollinear(prev, curr, next)) {
+        Segment(prev, next).middle
+      } else FinitePoint.circumcenter(curr, next, prev)
+      ((preve, e, nexte), FinitePoint.euclidian(e.dstNotInf(), circ))
+    }
+    val toDelete = this.orgNotInf()
+    val orgRing = this.org_ring()
+
+    var (a: Option[QuadEdge], b: Option[QuadEdge]) = (None, None)
+    (0 to orgRing.size - 1).foreach(i => {
+      // println(s"${orgRing(i).rprev()} , ${orgRing((i+1)%orgRing.size).rprev()}")
+      if (
+        orgRing(i)
+          .rprev()
+          .dstNotInf() != orgRing((i + 1) % orgRing.size).rprev().orgNotInf()
+      ) {
+        // println(s"${orgRing(i).rprev()} != ${orgRing((i+1)%orgRing.size).rprev()}")
+        a = Some(orgRing(i).rprev())
+        b = Some(orgRing((i + 1) % orgRing.size).rprev())
+      }
+    })
+
+    var orgRingEdges =
+      orgRing.sortBy(_.dstNotInf())(CounterClockwiseComparator(toDelete))
+
+    val kp = orgRingEdges.size
+    // assume(
+    // (0 to kp-2).forall(i => FinitePoint.ccw(orgRingEdges(i+1).dstNotInf(), this.orgNotInf(), orgRingEdges(i).dstNotInf()))
+    // ,"not sorted in CCW")
+
+    while (orgRingEdges.size > 3) {
+      val k = orgRingEdges.size
+      val idxs = (1 to k).map(i => Seq(i - 1, i % k, (i + 1) % k))
+      val m = idxs.map(cpl => cpl.map(orgRingEdges.apply))
+      val edgeData = m.map(cpl => {
+        val Seq(p, c, n) = cpl
+        val res = calculateCircumcenterDistance(p, c, n)
+        res
+      })
+      val v = edgeData
+        .filter(cpl => {
+          val es = cpl._1
+          val (p, c, n) = es
+          FinitePoint
+            .ccw(p.dstNotInf(), c.dstNotInf(), n.dstNotInf()) && QuadEdge
+            .make_edge(n.dstNotInf(), p.dstNotInf)
+            .rightof(c.orgNotInf())
+        })
+        .distinct
+      val (minEdge, _) = v.minBy(_._2)
+      QuadEdge.swap(minEdge._2)
+      orgRingEdges = orgRingEdges.filterNot(e => e == minEdge._2)
+    }
+    orgRingEdges.foreach(_.deleteEdge())
+
+    if (a != None) {
+      // println(s"${a.get} ->> ${b.get}")
+      println(a.get.sym.orgNotInf(), b.get.orgNotInf(), " | ", toDelete)
+      println(
+        s"LeftOf : ${QuadEdge.make_edge(a.get.sym.orgNotInf(), b.get.orgNotInf()).leftof(toDelete)}"
+      )
+      println(
+        s"RigthOf : ${QuadEdge.make_edge(a.get.sym.orgNotInf(), b.get.orgNotInf()).rightof(toDelete)}"
+      )
+      if (
+        QuadEdge
+          .make_edge(a.get.sym.orgNotInf(), b.get.orgNotInf())
+          .rightof(toDelete)
+      ) {
+        a.get.sym ---> b.get
+      }
+    }
+
   }
 
   def org_ring(): List[QuadEdge] = {
@@ -305,5 +564,6 @@ object QuadEdge {
 
     e.setOrig(a.dst());
     e.setDest(b.dst());
+    Delaunay.setVoronoiDual(e)
   }
 }

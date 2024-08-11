@@ -11,7 +11,7 @@ case class Segment(A: FinitePoint, B: FinitePoint) {
 
   def directionVector: FinitePoint = FinitePoint(B.x - A.x, B.y - A.y)
 
-  // ax + by + c = 0
+  /** ax + by + c = 0 */
   def cartesianEquation: (Double, Double, Double) = {
     val FinitePoint(dx, dy) = directionVector
     val a = dy
@@ -20,6 +20,7 @@ case class Segment(A: FinitePoint, B: FinitePoint) {
     (a, b, c)
   }
 
+  /** y = mx+b */
   def slopeIntercept: (Double, Double) = {
     val m = (B.y - A.y) / (B.x - A.x)
     (m, A.y - m * A.x)
@@ -55,5 +56,24 @@ case class Segment(A: FinitePoint, B: FinitePoint) {
     val foot = FinitePoint(p.x - a * d, p.y - b * d)
     println("---")
     FinitePoint(2 * foot.x - p.x, 2 * foot.y - p.y)
+  }
+
+  def normalizedDirection: FinitePoint = {
+    val vec = directionVector
+    val norm = math.sqrt(vec.x * vec.x + vec.y * vec.y)
+    FinitePoint(vec.x / norm, vec.y / norm)
+  }
+
+  def intersection(s : Segment): Option[(Double, Double)] = {
+    val Segment(p1, p2) = this
+    val Segment(p3, p4) = s
+    val denom = (p1.x-p2.x)*(p3.y-p4.y)-(p1.y -p2.y)*(p3.x-p4.x)
+    denom match {
+      case 0.0 | -0.0 => None
+      case denom =>
+        val x = (p1.x*p2.y - p1.y*p2.x)*(p3.x-p4.x) - (p1.x-p2.x)*(p3.x*p4.y-p3.y*p4.x)
+        val y = (p1.x*p2.y - p1.y*p2.x)*(p3.y-p4.y) - (p1.y-p2.y)*(p3.x*p4.y-p3.y*p4.x)
+        Some((x/denom, y/denom))
+    }
   }
 }

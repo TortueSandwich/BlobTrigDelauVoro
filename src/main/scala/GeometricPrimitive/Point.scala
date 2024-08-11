@@ -1,9 +1,19 @@
 import scala.util.Random
 
-
 sealed trait Point
 
 case object InfinitePoint extends Point
+
+  object CounterClockwiseComparator {
+    def apply(center: FinitePoint): Ordering[FinitePoint] = new Ordering[FinitePoint] {
+      def compare(p1: FinitePoint, p2: FinitePoint): Int = {
+        val angle1 = math.atan2(p1.y - center.y, p1.x - center.x)
+        val angle2 = math.atan2(p2.y - center.y, p2.x - center.x)
+        angle1.compareTo(angle2)
+      }
+    }
+  }
+
 case class FinitePoint(x: Double, y: Double) extends Point with Ordered[FinitePoint] {
   def compare(that: FinitePoint): Int = {
     if (this.x != that.x) this.x.compare(that.x)
@@ -30,7 +40,10 @@ case class FinitePoint(x: Double, y: Double) extends Point with Ordered[FinitePo
   def ^(rhs: FinitePoint): Double = this.x * rhs.y - this.y * rhs.x
 
   def +(rhs: FinitePoint): FinitePoint = FinitePoint(this.x + rhs.x, this.y + rhs.y)
+  def -(): FinitePoint = FinitePoint(-this.x, -this.y)
   def -(rhs: FinitePoint): FinitePoint = FinitePoint(this.x - rhs.x, this.y - rhs.y)
+
+  def *(rhs : Double): FinitePoint = FinitePoint(this.x*rhs, this.y*rhs)
 
   def isPointInTriangle(a: FinitePoint, b: FinitePoint, c: FinitePoint): Boolean = {
     def sign(p1: FinitePoint, p2: FinitePoint, p3: FinitePoint): Double = {

@@ -14,7 +14,7 @@ object UiMain extends JFXApp3 {
       height = HEIGHT
 
       scene = new Scene {
-        root = new Triangulation2DView()
+        root = new ScalafxApp()
       }
     }
   }

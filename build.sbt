@@ -20,3 +20,9 @@ libraryDependencies ++= {
 }
 
 lazy val root = (project in file("."))
+
+lazy val runUiMain = taskKey[Unit]("Runs the UiMain class")
+runUiMain := (Compile / runMain).toTask(" UiMain").value
+
+lazy val runTestGeom = taskKey[Unit]("Runs the TestGeom class")
+runTestGeom := (Compile / runMain).toTask(" TestGeom").value
