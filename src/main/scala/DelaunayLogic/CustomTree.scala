@@ -5,7 +5,7 @@ private sealed trait Tree
 private case class Node(left: Tree, right: Tree) extends Tree
 
 /** group of 2 or 3 ordered element */
-private case class Leaf(elements: List[FinitePoint]) extends Tree
+private case class Leaf(fst :FinitePoint, snd :FinitePoint, trd:Option[FinitePoint]) extends Tree
 
 private object Tree {
 
@@ -25,7 +25,7 @@ private object Tree {
 
   private def recBuild(elements: List[FinitePoint]): Tree = {
     if (elements.length <= 3) {
-      Leaf(elements)
+      Leaf(elements(0), elements(1), if (elements.length == 3) Some(elements(2)) else None)
     } else {
       val (leftElem, rightElem) = elements.splitAt(elements.length / 2)
       Node(recBuild(leftElem), recBuild(rightElem))

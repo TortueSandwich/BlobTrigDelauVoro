@@ -65,18 +65,18 @@ object Delaunay {
   private def divideAndConquerDelaunay(tree: Tree): (QuadEdge, QuadEdge) =
     tree match {
       // (Base case) 2 or 3 points
-      case Leaf(points) => handleLeaf(points)
+      case l : Leaf => handleLeaf(l)
       // reccursion
       case Node(left, right) => handleNode(left, right)
     }
 
-  private def handleLeaf(l: List[FinitePoint]) = l match {
-    case List(p1, p2) => {
+  private def handleLeaf(l: Leaf) = l match {
+    case Leaf(p1, p2, None) => {
       val a = QuadEdge.make_edge(p1, p2)
       (a, a.sym())
     }
 
-    case List(p1, p2, p3) => {
+    case Leaf(p1, p2, Some(p3)) => {
       val a = QuadEdge.make_edge(p1, p2)
       val b = QuadEdge.make_edge(p2, p3)
       QuadEdge.splice(a.sym(), b)
@@ -89,10 +89,6 @@ object Delaunay {
         (c.sym(), c)
       } else (a, b.sym()) // Colinear
     }
-    case _ =>
-      throw new RuntimeException(
-        s"Unkowned leaf size : ${l.size}"
-      ) // unreachable
   }
 
   private def handleNode(left: Tree, right: Tree) = {
@@ -205,7 +201,7 @@ object Delaunay {
     ) {
       QuadEdge.connect(basel.sym(), lcand.sym())
     } else { // unreachable
-      throw new RuntimeException("error in the choice of candidate")
+      throw new RuntimeException("error in the choice of candidate during triangulation")
     }
   }
 

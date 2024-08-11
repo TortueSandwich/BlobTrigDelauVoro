@@ -133,7 +133,7 @@ class ScalafxApp extends BorderPane {
       {
         val p = scalePoint(point)
         val circle = new Circle {
-          radius = 15
+          radius = 7
           fill <== when(
             Bindings.createBooleanBinding(
               () => selection.contains(point),
@@ -379,6 +379,7 @@ class ScalafxApp extends BorderPane {
         } else {
           val center = FinitePoint.circumcenter(a, b, c)
           val scaledcenter = scalePoint(center)
+          val getposcenter = (f: FinitePoint => Double) => createDoubleBinding(() => f(scaledcenter.get), scaledcenter)
           val scaledA = scalePoint(a)
           new Circle {
             radius <== Bindings.createDoubleBinding(
@@ -386,9 +387,9 @@ class ScalafxApp extends BorderPane {
               scaledA,
               scaledcenter
             )
-            centerX <== scaledcenter.get.x
-            centerY <== scaledcenter.get.y
-            stroke = Color.Blue
+            centerX <== getposcenter(_.x)
+            centerY <== getposcenter(_.y)
+            stroke = Color.Black
             fill = Color.Transparent
           }
         }
