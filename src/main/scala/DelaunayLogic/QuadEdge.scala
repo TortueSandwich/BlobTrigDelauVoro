@@ -172,8 +172,6 @@ class QuadEdge(
       subList.foreach(println)
     }
 
-    
-
     // closing
     val lastPoint = rearrangedEdges.last.dstNotInf()
     val firstPoint = rearrangedEdges.head.dstNotInf()
@@ -181,25 +179,25 @@ class QuadEdge(
     val pointsToCheck = pots.drop(1).dropRight(1)
     if (pointsToCheck.forall(p => closingEdge.rightof(p))) {
       QuadEdge.connect(endEdge.dnext(), startEdge.lnext())
-    } 
+    }
 
     rearrangedEdges.foreach(_.deleteEdge())
 
   }
 
   private def calculateCircumcenterDistance(
-          preve: QuadEdge,
-          e: QuadEdge,
-          nexte: QuadEdge
-      ): ((QuadEdge, QuadEdge, QuadEdge), Double) = {
-        val prev = preve.dstNotInf()
-        val curr = e.dstNotInf()
-        val next = nexte.dstNotInf()
-        val circ = if (FinitePoint.areCollinear(prev, curr, next)) {
-          Segment(prev, next).middle
-        } else FinitePoint.circumcenter(curr, next, prev)
-        ((preve, e, nexte), FinitePoint.euclidian(e.dstNotInf(), circ))
-      }
+      preve: QuadEdge,
+      e: QuadEdge,
+      nexte: QuadEdge
+  ): ((QuadEdge, QuadEdge, QuadEdge), Double) = {
+    val prev = preve.dstNotInf()
+    val curr = e.dstNotInf()
+    val next = nexte.dstNotInf()
+    val circ = if (FinitePoint.areCollinear(prev, curr, next)) {
+      Segment(prev, next).middle
+    } else FinitePoint.circumcenter(curr, next, prev)
+    ((preve, e, nexte), FinitePoint.euclidian(e.dstNotInf(), circ))
+  }
 
   def deleteEdgeFromTriangulation(): Unit = {
     val ptsFromHull =
@@ -484,25 +482,58 @@ class QuadEdge(
     FinitePoint.ccw(X, orgp, dstp)
   }
 
-  /** add point in middle a eche segment and the center of inscrit circle*/
+  def getPoints() =
+    this.iterator.flatMap(e => Seq(e.orgNotInf(), e.dstNotInf())).toSet.toSeq
+
+  def getTriangle() = {
+    val edgeSets: Set[Set[QuadEdge]] = this.iterator
+      .flatMap(e => Seq(e.right_ring().toSet, e.left_ring().toSet))
+      .toSet
+
+    edgeSets
+      .filter(_.size == 3)
+      .map(s => {
+        val trigpts = s
+          .flatMap(e => Seq(e.rot.orgNotInf(), e.rot.dstNotInf()))
+          .toSet
+
+        trigpts.toSeq match {
+          case Seq(a, b, c) => (a, b, c)
+        }
+      })
+  }
+
+  /** add point in middle a eche segment and the center of inscrit circle */
   def fatonise() = {
-    val pts = this.iterator.flatMap(e => Seq(e.orgNotInf(), e.dstNotInf())).toSeq
-    val mdl = this.iterator.map(e => Segment(e.orgNotInf(), e.dstNotInf()).middle).toSeq
+    val pts = getPoints()
+    val mdl =
+      this.iterator.map(e => Segment(e.orgNotInf(), e.dstNotInf()).middle).toSeq
 
     val edgeSets: Set[Set[QuadEdge]] = this.iterator
       .flatMap(e => Seq(e.right_ring().toSet, e.left_ring().toSet))
       .toSet
-    
-      val incirc = edgeSets.filter(_.size == 3).map(s => {
-        val trigpts = s.flatMap(e => Seq(e.rot.orgNotInf(), e.rot.dstNotInf(), e.tor.orgNotInf(), e.tor.dstNotInf() )).toSet
-        
+
+    val incirc = edgeSets
+      .filter(_.size == 3)
+      .map(s => {
+        val trigpts = s
+          .flatMap(e =>
+            Seq(
+              e.rot.orgNotInf(),
+              e.rot.dstNotInf(),
+              e.tor.orgNotInf(),
+              e.tor.dstNotInf()
+            )
+          )
+          .toSet
+
         trigpts.toSeq match {
-          case Seq(a,b,c) => FinitePoint.incenter(a,b,c)
+          case Seq(a, b, c) => FinitePoint.incenter(a, b, c)
         }
       })
 
-
-    val newFat = Delaunay.TriangulateDelaunay(pts.concat(mdl).concat(incirc).toSet.toList)
+    val newFat =
+      Delaunay.TriangulateDelaunay(pts.concat(mdl).concat(incirc).toSet.toList)
     newFat
   }
 

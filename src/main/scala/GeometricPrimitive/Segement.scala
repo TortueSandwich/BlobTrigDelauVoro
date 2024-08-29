@@ -45,6 +45,7 @@ case class Segment(A: FinitePoint, B: FinitePoint) {
     (a, b, c)
   }
 
+  /** euclidian */
   def length: Double = FinitePoint.euclidian(A, B)
 
   // Symmetric point with respect to the segment line

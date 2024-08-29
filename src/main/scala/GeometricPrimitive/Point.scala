@@ -129,6 +129,7 @@ object FinitePoint {
     }.toSet
   }
 
+  /** centre cercle incrit (toujours dans le triangle)*/
   def incenter(a: FinitePoint,b : FinitePoint,c: FinitePoint) : FinitePoint = {
     val na: Double = euclidian(b, c)
     val nb: Double = euclidian(a, c)
@@ -140,5 +141,21 @@ object FinitePoint {
     val I_y = (na * a.y + nb * b.y + nc * c.y) / p
 
     FinitePoint(I_x, I_y)
+  }
+
+  def getLocalMinDist(pts: Iterable[FinitePoint], x : FinitePoint) : Double = {
+      pts.foldLeft(Double.PositiveInfinity)(
+        ((acc, y) => if (x==y) acc else Math.min(acc, FinitePoint.euclidian(x, y)) )
+      )
+    }
+
+  def getAverageMinDist(pts: Iterable[FinitePoint]): Double = {
+    val points = pts.toSeq
+    val minDistance = points.foldLeft(0.0)((acc, p) => acc + FinitePoint.getLocalMinDist(points, p))
+    minDistance/pts.size
+  }
+
+  def getMaxDist(pts: Iterable[FinitePoint]) = {
+    Math.sqrt(2/(Math.sqrt(3)*pts.size))
   }
 }

@@ -35,16 +35,15 @@ class ScalafxApp extends BorderPane {
     if (selection.isEmpty) "Nothing"
     else "Selected Points: " + selection.map(formatpt).mkString(", ")
 
-  private val points = ObjectProperty(FinitePoint.generatePoints(15).toSeq)
+  val points = ObjectProperty(FinitePoint.generatePoints(15).toSeq)
   private val lines = ObjectProperty(Seq.empty[(FinitePoint, FinitePoint)])
 
   private var quadedge: ObjectProperty[QuadEdge] = ObjectProperty(
     Delaunay.TriangulateDelaunay(points.get.toList)
   )
 
-  private var quadedgeFAT = Bindings.createObjectBinding(() => 
-    quadedge.get.fatonise, quadedge  
-  )
+  private var quadedgeFAT =
+    Bindings.createObjectBinding(() => quadedge.get.fatonise, quadedge)
 
   val calculateBounds = Bindings.createObjectBinding[FinitePoint](
     () => {
@@ -147,7 +146,6 @@ class ScalafxApp extends BorderPane {
     }
   }
 
-
   private val generateButton = new Button {
     text = "Generate"
     onAction = _ => {
@@ -167,14 +165,37 @@ class ScalafxApp extends BorderPane {
       drawDelaunay()
       drawPoints()
 
-
       drawVoronoiFAT()
       drawPointsFAT()
 
     }
   }
 
+  private val fpo = new Button {
+    text = "FPO"
+    onAction = _ => {
+      println("FPO !!!")
 
+      val fpoed = FPO.fpoIteration(quadedge.get, List.empty)
+      quadedge.set(fpoed)
+
+      drawPane.children.clear()
+      selection.clear()
+      fatrepr.selected.set(false)
+
+      points.set(quadedge.get.getPoints())
+      lines.set(
+        quadedge.get.iterator.map(e => (e.orgNotInf(), e.dstNotInf())).toSeq
+      )
+
+      drawVoronoi()
+      drawDelaunay()
+      drawPoints()
+
+      drawVoronoiFAT()
+      drawPointsFAT()
+    }
+  }
 
   private val toolBar: ToolBar = new ToolBar {
     items = Seq(
@@ -183,7 +204,8 @@ class ScalafxApp extends BorderPane {
       generateButton,
       drawTriangulationCheckBox,
       drawVoronoiCheckBox,
-      fatrepr
+      fatrepr,
+      fpo
     )
   }
 
@@ -229,27 +251,29 @@ class ScalafxApp extends BorderPane {
     }
 
   def drawPointsFAT() =
-    quadedgeFAT.get.iterator.flatMap(e => Seq(e.orgNotInf(), e.dstNotInf())).foreach { point =>
-      {
-        val p = scalePoint(point)
-        val circle: Circle = new Circle {
-          radius = 7
-          fill <== when(
-            Bindings.createBooleanBinding(
-              () => points.get.contains(point),
-              points
-            )
-          ) choose Color.Transparent otherwise Color.Yellow
-          centerX <== createDoubleBinding(() => p.value.x, p)
-          centerY <== createDoubleBinding(() => p.value.y, p)
-          visible <== fatrepr.selected
-          
-        }
+    quadedgeFAT.get.iterator
+      .flatMap(e => Seq(e.orgNotInf(), e.dstNotInf()))
+      .foreach { point =>
+        {
+          val p = scalePoint(point)
+          val circle: Circle = new Circle {
+            radius = 7
+            fill <== when(
+              Bindings.createBooleanBinding(
+                () => points.get.contains(point),
+                points
+              )
+            ) choose Color.Transparent otherwise Color.Yellow
+            centerX <== createDoubleBinding(() => p.value.x, p)
+            centerY <== createDoubleBinding(() => p.value.y, p)
+            visible <== fatrepr.selected
 
-        drawPane.children.add(circle)
-        circle.toFront()
+          }
+
+          drawPane.children.add(circle)
+          circle.toFront()
+        }
       }
-    }
 
   def drawDelaunay() =
     lines.get.foreach {
@@ -381,9 +405,7 @@ class ScalafxApp extends BorderPane {
 
     })
 
-
-
-      def drawVoronoiFAT() =
+  def drawVoronoiFAT() =
     quadedgeFAT.get.rot.iterator.foreach(e => {
       val l: Line = (e.org(), e.dst()) match {
         case (a: FinitePoint, b: FinitePoint) => {
@@ -486,7 +508,6 @@ class ScalafxApp extends BorderPane {
       drawPane.getChildren.add(l)
 
     })
-
 
   private def formatpt(p: FinitePoint) = f"(${p.x}%.2f, ${p.y}%.2f)"
 
