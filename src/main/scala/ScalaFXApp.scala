@@ -29,14 +29,6 @@ class ScalafxApp extends BorderPane {
     )
   }
 
-  def calculateBounds(points: Seq[FinitePoint]): FinitePoint = {
-    val minX = points.map(_.x).min
-    val maxX = points.map(_.x).max
-    val minY = points.map(_.y).min
-    val maxY = points.map(_.y).max
-    FinitePoint(maxX - minX, maxY - minY)
-  }
-
   private val selection = new ObservableHashSet[FinitePoint].empty
   private val coordinatesLabel = new Label(resetLabel())
   def resetLabel(): String =
@@ -50,8 +42,32 @@ class ScalafxApp extends BorderPane {
     Delaunay.TriangulateDelaunay(points.get.toList)
   )
 
+  private var quadedgeFAT = Bindings.createObjectBinding(() => 
+    quadedge.get.fatonise, quadedge  
+  )
+
+  val calculateBounds = Bindings.createObjectBinding[FinitePoint](
+    () => {
+      val allPoints = points.get
+      if (allPoints.isEmpty) {
+        // Si aucun point n'est présent, retourner une taille de 0,0
+        FinitePoint(0, 0)
+      } else {
+        val minX = allPoints.map(_.x).min
+        val maxX = allPoints.map(_.x).max
+        val minY = allPoints.map(_.y).min
+        val maxY = allPoints.map(_.y).max
+        // Calculer la largeur et la hauteur du rectangle englobant
+        FinitePoint(maxX - minX, maxY - minY)
+        FinitePoint(1, 1)
+      }
+    },
+    points
+  )
+
   val boundsSize = Bindings.createObjectBinding[FinitePoint](
-    () => calculateBounds(points.get),
+    () => calculateBounds.get,
+    calculateBounds,
     points
   )
 
@@ -68,12 +84,13 @@ class ScalafxApp extends BorderPane {
 
   val offsetVec = Bindings.createObjectBinding[FinitePoint](
     () => {
-      val bounds = calculateBounds(points.get)
+      val bounds = calculateBounds.get
       FinitePoint(
         (drawPane.widthProperty.toDouble - bounds.x * minSize.doubleValue) / 2,
         (drawPane.heightProperty.toDouble - bounds.y * minSize.doubleValue) / 2
       )
     },
+    calculateBounds,
     minSize,
     points
   )
@@ -122,11 +139,21 @@ class ScalafxApp extends BorderPane {
   private val circlesVar =
     new collection.mutable.ListBuffer[scalafx.scene.shape.Shape]()
 
+  private val fatrepr = new CheckBox {
+    text = "fatrepr"
+    selected = false
+    onAction = _ => {
+      (quadedge.get().fatonise())
+    }
+  }
+
+
   private val generateButton = new Button {
     text = "Generate"
     onAction = _ => {
       drawPane.children.clear()
       selection.clear()
+      fatrepr.selected.set(false)
 
       val nbPoints = numPointsField.text.value.toInt
       points.set(FinitePoint.generatePoints(nbPoints).toSeq)
@@ -140,8 +167,14 @@ class ScalafxApp extends BorderPane {
       drawDelaunay()
       drawPoints()
 
+
+      drawVoronoiFAT()
+      drawPointsFAT()
+
     }
   }
+
+
 
   private val toolBar: ToolBar = new ToolBar {
     items = Seq(
@@ -149,7 +182,8 @@ class ScalafxApp extends BorderPane {
       numPointsField,
       generateButton,
       drawTriangulationCheckBox,
-      drawVoronoiCheckBox
+      drawVoronoiCheckBox,
+      fatrepr
     )
   }
 
@@ -187,6 +221,29 @@ class ScalafxApp extends BorderPane {
             (e: MouseEvent) => coordinatesLabel.text = formatpt(point)
           onMouseExited =
             (e: MouseEvent) => coordinatesLabel.text = resetLabel()
+        }
+
+        drawPane.children.add(circle)
+        circle.toFront()
+      }
+    }
+
+  def drawPointsFAT() =
+    quadedgeFAT.get.iterator.flatMap(e => Seq(e.orgNotInf(), e.dstNotInf())).foreach { point =>
+      {
+        val p = scalePoint(point)
+        val circle: Circle = new Circle {
+          radius = 7
+          fill <== when(
+            Bindings.createBooleanBinding(
+              () => points.get.contains(point),
+              points
+            )
+          ) choose Color.Transparent otherwise Color.Yellow
+          centerX <== createDoubleBinding(() => p.value.x, p)
+          centerY <== createDoubleBinding(() => p.value.y, p)
+          visible <== fatrepr.selected
+          
         }
 
         drawPane.children.add(circle)
@@ -323,6 +380,113 @@ class ScalafxApp extends BorderPane {
       drawPane.getChildren.add(l)
 
     })
+
+
+
+      def drawVoronoiFAT() =
+    quadedgeFAT.get.rot.iterator.foreach(e => {
+      val l: Line = (e.org(), e.dst()) match {
+        case (a: FinitePoint, b: FinitePoint) => {
+          val optbinding = scaleFuncTOT(a, b)
+          val getf = getfactory(optbinding)
+          new Line {
+            startX <== getf(_._1.x)
+            startY <== getf(_._1.y)
+            endX <== getf(_._2.x)
+            endY <== getf(_._2.y)
+            stroke = Color.Green
+            onMouseEntered = (ev: MouseEvent) =>
+              coordinatesLabel.text =
+                s"Dual line of ${formatpt(e.rot.orgNotInf)} to ${formatpt(e.tor.orgNotInf)}"
+            onMouseExited =
+              (e: MouseEvent) => coordinatesLabel.text = resetLabel()
+          }
+
+        }
+
+        // Mediatrice
+        case (InfinitePoint, InfinitePoint) => {
+          val segment = Segment(e.tor.orgNotInf(), e.tor.dstNotInf())
+          val (a, b, c) = segment.perpendicularBisector
+          val (f, g) = (FinitePoint(0.0, -c / b), FinitePoint(-c / a, 0.0))
+          val optbinding = scaleFuncTOT(f, g)
+          val getf = getfactory(optbinding)
+          new Line {
+            startX <== getf(_._1.x)
+            startY <== getf(_._1.y)
+            endX <== getf(_._2.x)
+            endY <== getf(_._2.y)
+            stroke = Color.Green
+            onMouseEntered = (ev: MouseEvent) =>
+              coordinatesLabel.text =
+                s"Line medatrice of ${formatpt(e.rot.orgNotInf)} to ${formatpt(e.tor.orgNotInf)}"
+            onMouseExited =
+              (ev: MouseEvent) => coordinatesLabel.text = resetLabel()
+          }
+        }
+
+        // Demi droite
+        case (InfinitePoint, _: FinitePoint) |
+            (_: FinitePoint, InfinitePoint) => {
+          val (a: FinitePoint, b, walle) = if (e.dst == InfinitePoint) {
+            (e.orgNotInf(), e.dst(), e.tor)
+          } else {
+            (e.dstNotInf(), e.org(), e.sym.tor)
+          }
+          assume(b == InfinitePoint)
+          val (pA, pB, pC) =
+            (walle.orgNotInf(), walle.dstNotInf(), walle.oprev().dstNotInf())
+          val symPoint = Segment(pA, pB).middle
+          val scaledA = scalePoint(a)
+          val scaledSym = scalePoint(symPoint)
+          val vecDir = Segment(a, symPoint).normalizedDirection
+
+          val width = drawPane.width.value
+          val height = drawPane.height.value
+
+          val coefX =
+            if (vecDir.x != 0)
+              Math.max(
+                Math.abs(width / vecDir.x),
+                Math.abs(-width / vecDir.x)
+              )
+            else Double.PositiveInfinity
+          val coefY =
+            if (vecDir.y != 0)
+              Math.max(
+                Math.abs(height / vecDir.y),
+                Math.abs(-height / vecDir.y)
+              )
+            else Double.PositiveInfinity
+
+          val coef = Math.min(coefX, coefY) * 1.1
+
+          val endP =
+            if (walle.rightof(a)) a + vecDir * coef else a - vecDir * coef
+
+          val optbinding = scaleFuncTOT(a, endP)
+          val getf = getfactory(optbinding)
+          new Line {
+            startX <== getf(_._1.x)
+            startY <== getf(_._1.y)
+            endX <== getf(_._2.x)
+            endY <== getf(_._2.y)
+            stroke = Color.Green
+            onMouseEntered = (ev: MouseEvent) =>
+              coordinatesLabel.text =
+                s"Dual line of ${formatpt(e.rot.orgNotInf)} to ${formatpt(e.tor.orgNotInf)}"
+            onMouseExited =
+              (ev: MouseEvent) => coordinatesLabel.text = resetLabel()
+          }
+        }
+        case _ =>
+          throw new RuntimeException("Unreachable case encountered. trigview")
+      }
+      l.visible <== fatrepr.selected
+      drawPane.getChildren.add(l)
+
+    })
+
 
   private def formatpt(p: FinitePoint) = f"(${p.x}%.2f, ${p.y}%.2f)"
 

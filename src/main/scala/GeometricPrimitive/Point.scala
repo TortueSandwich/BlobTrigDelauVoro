@@ -128,4 +128,17 @@ object FinitePoint {
       FinitePoint(x, y)
     }.toSet
   }
+
+  def incenter(a: FinitePoint,b : FinitePoint,c: FinitePoint) : FinitePoint = {
+    val na: Double = euclidian(b, c)
+    val nb: Double = euclidian(a, c)
+    val nc: Double = euclidian(a, b)
+    
+    val p = na + nb + nc
+    
+    val I_x = (na * a.x + nb * b.x + nc * c.x) / p
+    val I_y = (na * a.y + nb * b.y + nc * c.y) / p
+
+    FinitePoint(I_x, I_y)
+  }
 }

@@ -484,6 +484,28 @@ class QuadEdge(
     FinitePoint.ccw(X, orgp, dstp)
   }
 
+  /** add point in middle a eche segment and the center of inscrit circle*/
+  def fatonise() = {
+    val pts = this.iterator.flatMap(e => Seq(e.orgNotInf(), e.dstNotInf())).toSeq
+    val mdl = this.iterator.map(e => Segment(e.orgNotInf(), e.dstNotInf()).middle).toSeq
+
+    val edgeSets: Set[Set[QuadEdge]] = this.iterator
+      .flatMap(e => Seq(e.right_ring().toSet, e.left_ring().toSet))
+      .toSet
+    
+      val incirc = edgeSets.filter(_.size == 3).map(s => {
+        val trigpts = s.flatMap(e => Seq(e.rot.orgNotInf(), e.rot.dstNotInf(), e.tor.orgNotInf(), e.tor.dstNotInf() )).toSet
+        
+        trigpts.toSeq match {
+          case Seq(a,b,c) => FinitePoint.incenter(a,b,c)
+        }
+      })
+
+
+    val newFat = Delaunay.TriangulateDelaunay(pts.concat(mdl).concat(incirc).toSet.toList)
+    newFat
+  }
+
 };
 
 object QuadEdge {
