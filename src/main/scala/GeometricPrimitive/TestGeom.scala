@@ -5,7 +5,7 @@ object TestGeom extends App {
   // test_incircle()
   println("\u001b[92m\u001b[1mToute les assertions sont passées\u001b[0m")
 
-  def test_CCW() {
+  def test_CCW(): Unit = {
     val O = FinitePoint(0.0, 0.0)
     val A = FinitePoint(0.0, 1.0)
     val B = FinitePoint(1.0, 0.0)
@@ -17,12 +17,16 @@ object TestGeom extends App {
     assert(!FinitePoint.ccw(O, A, C), "OAC")
     assert(!FinitePoint.ccw(O, B, C), "OBC")
 
-    assert(!FinitePoint.ccw(FinitePoint(1, 0), FinitePoint(-1, 0), FinitePoint(-2, 2)), "Test unitaire")
+    assert(
+      !FinitePoint
+        .ccw(FinitePoint(1, 0), FinitePoint(-1, 0), FinitePoint(-2, 2)),
+      "Test unitaire"
+    )
 
     println("test test_CCW() ok")
   }
 
-  def test_colineaire() {
+  def test_colineaire(): Unit = {
     val A = FinitePoint(0.0, 0.0)
     val B = FinitePoint(0.0, 2.0)
     val C = FinitePoint(0.0, 5.0)
@@ -34,7 +38,7 @@ object TestGeom extends App {
     println("test test_colineaire() ok")
   }
 
-  def test_incircle() {
+  def test_incircle(): Unit = {
     val A = FinitePoint(0.0, 0.0)
     val B = FinitePoint(0.0, 2.0)
     val C = FinitePoint(1.0, 0.0)
@@ -46,7 +50,10 @@ object TestGeom extends App {
     assert(B.is_incircle(A, C, E), "B est bien dans (ACE)")
 
     // Sur le cerle
-    assert(FinitePoint(1.0, 2.0).is_incircle(A, B, C), "(1,2) est bien dans (ABC)")
+    assert(
+      FinitePoint(1.0, 2.0).is_incircle(A, B, C),
+      "(1,2) est bien dans (ABC)"
+    )
     // Pt colineaire
     try {
       B.is_incircle(A, C, FinitePoint(2, 0))

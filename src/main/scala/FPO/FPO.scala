@@ -14,7 +14,7 @@ object FPO {
       var rmax = FinitePoint.getLocalMinDist(quadedge.getPoints(), vertex)
 
       tmpquad = delaunayRemove(tmpquad, vertex)
-      val triangles = tmpquad.getTriangle
+      val triangles = tmpquad.getTriangle()
 
       for (triangle <- triangles) {
         val circumcenter =

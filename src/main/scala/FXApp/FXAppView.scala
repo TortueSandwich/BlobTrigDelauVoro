@@ -66,6 +66,4 @@ class View(model: Model) extends BorderPane {
   top = toolBar
   bottom = bottomBar
 
-
-  
 }

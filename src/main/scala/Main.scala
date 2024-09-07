@@ -21,10 +21,10 @@ object Main extends App {
   val edges = edge.iterator.toSeq.distinct
   val qsup = edges.iterator
       .filter(e => (e.orgNotInf == sup || e.dstNotInf == sup) && (sup2 == null || e.orgNotInf == sup2 || e.dstNotInf == sup2))
-      .map(q => if (q.dstNotInf() == sup) q.sym else q)
+      .map(q => if (q.dstNotInf == sup) q.sym else q)
       .toSeq
 
-  println(s"Supression de ${qsup(0).orgNotInf()} :")
+  println(s"Supression de ${qsup(0).orgNotInf} :")
   qsup(0).deleteEdgeFromTriangulation()
   println("finito")
 

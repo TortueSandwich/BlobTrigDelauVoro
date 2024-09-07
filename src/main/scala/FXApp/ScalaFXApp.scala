@@ -7,6 +7,7 @@ import scalafx.scene.layout.{
   BackgroundFill,
   Background
 }
+import scalafx.Includes._
 import scalafx.scene.control.{ToolBar, Label, TextField, CheckBox, Button}
 import scalafx.scene.paint.Color
 import scalafx.scene.shape.{Circle, Line}
@@ -17,10 +18,9 @@ import scalafx.beans.property.ObjectProperty
 import scalafx.beans.property.SetProperty
 import scalafx.beans.property.DoubleProperty
 import scala.collection.mutable
-import scalafx.collections.ObservableHashSet
-import scalafx.collections.ObservableArray.Change
 import scalafx.beans.property.Property
 import scalafx.beans.property.ReadOnlyBooleanProperty
+import scalafx.collections.ObservableHashSet
 
 class ScalafxApp extends BorderPane {
   private val drawPane = new Pane {
@@ -29,7 +29,8 @@ class ScalafxApp extends BorderPane {
     )
   }
 
-  private val selection = new ObservableHashSet[FinitePoint].empty
+  private val selection: ObservableHashSet[FinitePoint] =
+    new ObservableHashSet[FinitePoint]()
   private val coordinatesLabel = new Label(resetLabel())
   def resetLabel(): String =
     if (selection.isEmpty) "Nothing"
@@ -43,7 +44,7 @@ class ScalafxApp extends BorderPane {
   )
 
   private var quadedgeFAT =
-    Bindings.createObjectBinding(() => quadedge.get.fatonise, quadedge)
+    Bindings.createObjectBinding(() => quadedge.get.fatonise(), quadedge)
 
   val calculateBounds = Bindings.createObjectBinding[FinitePoint](
     () => {
@@ -158,7 +159,7 @@ class ScalafxApp extends BorderPane {
       // points.set(Consts.points)
       quadedge.set(Delaunay.TriangulateDelaunay(points.get.toList))
       lines.set(
-        quadedge.get.iterator.map(e => (e.orgNotInf(), e.dstNotInf())).toSeq
+        quadedge.get.iterator.map(e => (e.orgNotInf, e.dstNotInf)).toSeq
       )
 
       drawVoronoi()
@@ -185,7 +186,7 @@ class ScalafxApp extends BorderPane {
 
       points.set(quadedge.get.getPoints())
       lines.set(
-        quadedge.get.iterator.map(e => (e.orgNotInf(), e.dstNotInf())).toSeq
+        quadedge.get.iterator.map(e => (e.orgNotInf, e.dstNotInf)).toSeq
       )
 
       drawVoronoi()
@@ -252,7 +253,7 @@ class ScalafxApp extends BorderPane {
 
   def drawPointsFAT() =
     quadedgeFAT.get.iterator
-      .flatMap(e => Seq(e.orgNotInf(), e.dstNotInf()))
+      .flatMap(e => Seq(e.orgNotInf, e.dstNotInf))
       .foreach { point =>
         {
           val p = scalePoint(point)
@@ -303,7 +304,7 @@ class ScalafxApp extends BorderPane {
 
   def drawVoronoi() =
     quadedge.get.rot.iterator.foreach(e => {
-      val l: Line = (e.org(), e.dst()) match {
+      val l: Line = (e.org, e.dst) match {
         case (a: FinitePoint, b: FinitePoint) => {
           val optbinding = scaleFuncTOT(a, b)
           val getf = getfactory(optbinding)
@@ -324,7 +325,7 @@ class ScalafxApp extends BorderPane {
 
         // Mediatrice
         case (InfinitePoint, InfinitePoint) => {
-          val segment = Segment(e.tor.orgNotInf(), e.tor.dstNotInf())
+          val segment = Segment(e.tor.orgNotInf, e.tor.dstNotInf)
           val (a, b, c) = segment.perpendicularBisector
           val (f, g) = (FinitePoint(0.0, -c / b), FinitePoint(-c / a, 0.0))
           val optbinding = scaleFuncTOT(f, g)
@@ -347,13 +348,13 @@ class ScalafxApp extends BorderPane {
         case (InfinitePoint, _: FinitePoint) |
             (_: FinitePoint, InfinitePoint) => {
           val (a: FinitePoint, b, walle) = if (e.dst == InfinitePoint) {
-            (e.orgNotInf(), e.dst(), e.tor)
+            (e.orgNotInf, e.dst, e.tor)
           } else {
-            (e.dstNotInf(), e.org(), e.sym.tor)
+            (e.dstNotInf, e.org, e.sym.tor)
           }
           assume(b == InfinitePoint)
           val (pA, pB, pC) =
-            (walle.orgNotInf(), walle.dstNotInf(), walle.oprev().dstNotInf())
+            (walle.orgNotInf, walle.dstNotInf, walle.oprev.dstNotInf)
           val symPoint = Segment(pA, pB).middle
           val scaledA = scalePoint(a)
           val scaledSym = scalePoint(symPoint)
@@ -406,110 +407,114 @@ class ScalafxApp extends BorderPane {
     })
 
   def drawVoronoiFAT() =
-    quadedgeFAT.get.rot.iterator.foreach(e => {
-      val l: Line = (e.org(), e.dst()) match {
-        case (a: FinitePoint, b: FinitePoint) => {
-          val optbinding = scaleFuncTOT(a, b)
-          val getf = getfactory(optbinding)
-          new Line {
-            startX <== getf(_._1.x)
-            startY <== getf(_._1.y)
-            endX <== getf(_._2.x)
-            endY <== getf(_._2.y)
-            stroke = Color.Green
-            onMouseEntered = (ev: MouseEvent) =>
-              coordinatesLabel.text =
-                s"Dual line of ${formatpt(e.rot.orgNotInf)} to ${formatpt(e.tor.orgNotInf)}"
-            onMouseExited =
-              (e: MouseEvent) => coordinatesLabel.text = resetLabel()
+    quadedgeFAT
+      .get()
+      .rot
+      .iterator
+      .foreach(e => {
+        val l: Line = (e.org, e.dst) match {
+          case (a: FinitePoint, b: FinitePoint) => {
+            val optbinding = scaleFuncTOT(a, b)
+            val getf = getfactory(optbinding)
+            new Line {
+              startX <== getf(_._1.x)
+              startY <== getf(_._1.y)
+              endX <== getf(_._2.x)
+              endY <== getf(_._2.y)
+              stroke = Color.Green
+              onMouseEntered = (ev: MouseEvent) =>
+                coordinatesLabel.text =
+                  s"Dual line of ${formatpt(e.rot.orgNotInf)} to ${formatpt(e.tor.orgNotInf)}"
+              onMouseExited =
+                (e: MouseEvent) => coordinatesLabel.text = resetLabel()
+            }
+
           }
 
-        }
-
-        // Mediatrice
-        case (InfinitePoint, InfinitePoint) => {
-          val segment = Segment(e.tor.orgNotInf(), e.tor.dstNotInf())
-          val (a, b, c) = segment.perpendicularBisector
-          val (f, g) = (FinitePoint(0.0, -c / b), FinitePoint(-c / a, 0.0))
-          val optbinding = scaleFuncTOT(f, g)
-          val getf = getfactory(optbinding)
-          new Line {
-            startX <== getf(_._1.x)
-            startY <== getf(_._1.y)
-            endX <== getf(_._2.x)
-            endY <== getf(_._2.y)
-            stroke = Color.Green
-            onMouseEntered = (ev: MouseEvent) =>
-              coordinatesLabel.text =
-                s"Line medatrice of ${formatpt(e.rot.orgNotInf)} to ${formatpt(e.tor.orgNotInf)}"
-            onMouseExited =
-              (ev: MouseEvent) => coordinatesLabel.text = resetLabel()
+          // Mediatrice
+          case (InfinitePoint, InfinitePoint) => {
+            val segment = Segment(e.tor.orgNotInf, e.tor.dstNotInf)
+            val (a, b, c) = segment.perpendicularBisector
+            val (f, g) = (FinitePoint(0.0, -c / b), FinitePoint(-c / a, 0.0))
+            val optbinding = scaleFuncTOT(f, g)
+            val getf = getfactory(optbinding)
+            new Line {
+              startX <== getf(_._1.x)
+              startY <== getf(_._1.y)
+              endX <== getf(_._2.x)
+              endY <== getf(_._2.y)
+              stroke = Color.Green
+              onMouseEntered = (ev: MouseEvent) =>
+                coordinatesLabel.text =
+                  s"Line medatrice of ${formatpt(e.rot.orgNotInf)} to ${formatpt(e.tor.orgNotInf)}"
+              onMouseExited =
+                (ev: MouseEvent) => coordinatesLabel.text = resetLabel()
+            }
           }
+
+          // Demi droite
+          case (InfinitePoint, _: FinitePoint) |
+              (_: FinitePoint, InfinitePoint) => {
+            // val (a: FinitePoint, b, walle) = if (e.dst == InfinitePoint) {
+            //   (e.orgNotInf, e.dst, e.tor)
+            // } else {
+            //   (e.dstNotInf, e.org, e.sym.tor)
+            // }
+            // assume(b == InfinitePoint)
+            // val (pA, pB, pC) =
+            //   (walle.orgNotInf, walle.dstNotInf, walle.oprev.dstNotInf)
+            // val symPoint = Segment(pA, pB).middle
+            // val scaledA = scalePoint(a)
+            // val scaledSym = scalePoint(symPoint)
+            // val vecDir = Segment(a, symPoint).normalizedDirection
+
+            // val width = drawPane.width.value
+            // val height = drawPane.height.value
+
+            // val coefX =
+            //   if (vecDir.x != 0)
+            //     Math.max(
+            //       Math.abs(width / vecDir.x),
+            //       Math.abs(-width / vecDir.x)
+            //     )
+            //   else Double.PositiveInfinity
+            // val coefY =
+            //   if (vecDir.y != 0)
+            //     Math.max(
+            //       Math.abs(height / vecDir.y),
+            //       Math.abs(-height / vecDir.y)
+            //     )
+            //   else Double.PositiveInfinity
+
+            // val coef = Math.min(coefX, coefY) * 1.1
+
+            // val endP =
+            //   if (walle.rightof(a)) a + vecDir * coef else a - vecDir * coef
+
+            // val optbinding = scaleFuncTOT(a, endP)
+            // val getf = getfactory(optbinding)
+            // new Line {
+            //   startX <== getf(_._1.x)
+            //   startY <== getf(_._1.y)
+            //   endX <== getf(_._2.x)
+            //   endY <== getf(_._2.y)
+            //   stroke = Color.LightGreen
+            //   onMouseEntered = (ev: MouseEvent) =>
+            //     coordinatesLabel.text =
+            //       s"FAT dual line of ${formatpt(e.rot.orgNotInf)} to ${formatpt(e.tor.orgNotInf)}"
+            //   onMouseExited =
+            //     (ev: MouseEvent) => coordinatesLabel.text = resetLabel()
+            // }
+
+            new Line {}
+          }
+          case _ =>
+            throw new RuntimeException("Unreachable case encountered. trigview")
         }
+        l.visible <== fatrepr.selected
+        drawPane.getChildren.add(l)
 
-        // Demi droite
-        case (InfinitePoint, _: FinitePoint) |
-            (_: FinitePoint, InfinitePoint) => {
-          // val (a: FinitePoint, b, walle) = if (e.dst == InfinitePoint) {
-          //   (e.orgNotInf(), e.dst(), e.tor)
-          // } else {
-          //   (e.dstNotInf(), e.org(), e.sym.tor)
-          // }
-          // assume(b == InfinitePoint)
-          // val (pA, pB, pC) =
-          //   (walle.orgNotInf(), walle.dstNotInf(), walle.oprev().dstNotInf())
-          // val symPoint = Segment(pA, pB).middle
-          // val scaledA = scalePoint(a)
-          // val scaledSym = scalePoint(symPoint)
-          // val vecDir = Segment(a, symPoint).normalizedDirection
-
-          // val width = drawPane.width.value
-          // val height = drawPane.height.value
-
-          // val coefX =
-          //   if (vecDir.x != 0)
-          //     Math.max(
-          //       Math.abs(width / vecDir.x),
-          //       Math.abs(-width / vecDir.x)
-          //     )
-          //   else Double.PositiveInfinity
-          // val coefY =
-          //   if (vecDir.y != 0)
-          //     Math.max(
-          //       Math.abs(height / vecDir.y),
-          //       Math.abs(-height / vecDir.y)
-          //     )
-          //   else Double.PositiveInfinity
-
-          // val coef = Math.min(coefX, coefY) * 1.1
-
-          // val endP =
-          //   if (walle.rightof(a)) a + vecDir * coef else a - vecDir * coef
-
-          // val optbinding = scaleFuncTOT(a, endP)
-          // val getf = getfactory(optbinding)
-          // new Line {
-          //   startX <== getf(_._1.x)
-          //   startY <== getf(_._1.y)
-          //   endX <== getf(_._2.x)
-          //   endY <== getf(_._2.y)
-          //   stroke = Color.LightGreen
-          //   onMouseEntered = (ev: MouseEvent) =>
-          //     coordinatesLabel.text =
-          //       s"FAT dual line of ${formatpt(e.rot.orgNotInf)} to ${formatpt(e.tor.orgNotInf)}"
-          //   onMouseExited =
-          //     (ev: MouseEvent) => coordinatesLabel.text = resetLabel()
-          // }
-
-          new Line {}
-        }
-        case _ =>
-          throw new RuntimeException("Unreachable case encountered. trigview")
-      }
-      l.visible <== fatrepr.selected
-      drawPane.getChildren.add(l)
-
-    })
+      })
 
   private def formatpt(p: FinitePoint) = f"(${p.x}%.2f, ${p.y}%.2f)"
 

@@ -17,7 +17,5 @@ class Model {
   // )
   // val lines: ObjectProperty[Iterable[(FinitePoint, FinitePoint)]] = ObjectProperty(Seq.empty)
   // val selection: ObservableHashSet[FinitePoint] = new ObservableHashSet[FinitePoint]()
-  
-  
 
 }

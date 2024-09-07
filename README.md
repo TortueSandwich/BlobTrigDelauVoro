@@ -3,7 +3,18 @@
 Todo :D
 
 
+also TODO : API
+
+## Usage
+
+add to ``sbt build`` :
+
+```scala
+libraryDependencies += "blob" % "quadedgetriangulation_2.13" % "1.0"
+```
+
 ### Keywords
+
 Delaunay Triangulation
 Voronoi diagram
 Divide and conquer
