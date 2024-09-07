@@ -131,6 +131,10 @@ object FinitePoint {
 
   /** centre cercle incrit (toujours dans le triangle)*/
   def incenter(a: FinitePoint,b : FinitePoint,c: FinitePoint) : FinitePoint = {
+    assume(!areCollinear(a, b, c), "les points sont colinéaires")
+    assume(a != b, s"a et b sont pareils (i.e = $a)")
+    assume(b != c, s"b et c sont pareils (i.e = $b)")
+    assume(a != c, s"a et c sont pareils (i.e = $c)")
     val na: Double = euclidian(b, c)
     val nb: Double = euclidian(a, c)
     val nc: Double = euclidian(a, b)

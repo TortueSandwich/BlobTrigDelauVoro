@@ -151,7 +151,7 @@ class ScalafxApp extends BorderPane {
     onAction = _ => {
       drawPane.children.clear()
       selection.clear()
-      fatrepr.selected.set(false)
+      // fatrepr.selected.set(false)
 
       val nbPoints = numPointsField.text.value.toInt
       points.set(FinitePoint.generatePoints(nbPoints).toSeq)
@@ -181,7 +181,7 @@ class ScalafxApp extends BorderPane {
 
       drawPane.children.clear()
       selection.clear()
-      fatrepr.selected.set(false)
+      // fatrepr.selected.set(false)
 
       points.set(quadedge.get.getPoints())
       lines.set(
@@ -257,7 +257,7 @@ class ScalafxApp extends BorderPane {
         {
           val p = scalePoint(point)
           val circle: Circle = new Circle {
-            radius = 7
+            radius = 4
             fill <== when(
               Bindings.createBooleanBinding(
                 () => points.get.contains(point),
@@ -450,56 +450,58 @@ class ScalafxApp extends BorderPane {
         // Demi droite
         case (InfinitePoint, _: FinitePoint) |
             (_: FinitePoint, InfinitePoint) => {
-          val (a: FinitePoint, b, walle) = if (e.dst == InfinitePoint) {
-            (e.orgNotInf(), e.dst(), e.tor)
-          } else {
-            (e.dstNotInf(), e.org(), e.sym.tor)
-          }
-          assume(b == InfinitePoint)
-          val (pA, pB, pC) =
-            (walle.orgNotInf(), walle.dstNotInf(), walle.oprev().dstNotInf())
-          val symPoint = Segment(pA, pB).middle
-          val scaledA = scalePoint(a)
-          val scaledSym = scalePoint(symPoint)
-          val vecDir = Segment(a, symPoint).normalizedDirection
+          // val (a: FinitePoint, b, walle) = if (e.dst == InfinitePoint) {
+          //   (e.orgNotInf(), e.dst(), e.tor)
+          // } else {
+          //   (e.dstNotInf(), e.org(), e.sym.tor)
+          // }
+          // assume(b == InfinitePoint)
+          // val (pA, pB, pC) =
+          //   (walle.orgNotInf(), walle.dstNotInf(), walle.oprev().dstNotInf())
+          // val symPoint = Segment(pA, pB).middle
+          // val scaledA = scalePoint(a)
+          // val scaledSym = scalePoint(symPoint)
+          // val vecDir = Segment(a, symPoint).normalizedDirection
 
-          val width = drawPane.width.value
-          val height = drawPane.height.value
+          // val width = drawPane.width.value
+          // val height = drawPane.height.value
 
-          val coefX =
-            if (vecDir.x != 0)
-              Math.max(
-                Math.abs(width / vecDir.x),
-                Math.abs(-width / vecDir.x)
-              )
-            else Double.PositiveInfinity
-          val coefY =
-            if (vecDir.y != 0)
-              Math.max(
-                Math.abs(height / vecDir.y),
-                Math.abs(-height / vecDir.y)
-              )
-            else Double.PositiveInfinity
+          // val coefX =
+          //   if (vecDir.x != 0)
+          //     Math.max(
+          //       Math.abs(width / vecDir.x),
+          //       Math.abs(-width / vecDir.x)
+          //     )
+          //   else Double.PositiveInfinity
+          // val coefY =
+          //   if (vecDir.y != 0)
+          //     Math.max(
+          //       Math.abs(height / vecDir.y),
+          //       Math.abs(-height / vecDir.y)
+          //     )
+          //   else Double.PositiveInfinity
 
-          val coef = Math.min(coefX, coefY) * 1.1
+          // val coef = Math.min(coefX, coefY) * 1.1
 
-          val endP =
-            if (walle.rightof(a)) a + vecDir * coef else a - vecDir * coef
+          // val endP =
+          //   if (walle.rightof(a)) a + vecDir * coef else a - vecDir * coef
 
-          val optbinding = scaleFuncTOT(a, endP)
-          val getf = getfactory(optbinding)
-          new Line {
-            startX <== getf(_._1.x)
-            startY <== getf(_._1.y)
-            endX <== getf(_._2.x)
-            endY <== getf(_._2.y)
-            stroke = Color.Green
-            onMouseEntered = (ev: MouseEvent) =>
-              coordinatesLabel.text =
-                s"Dual line of ${formatpt(e.rot.orgNotInf)} to ${formatpt(e.tor.orgNotInf)}"
-            onMouseExited =
-              (ev: MouseEvent) => coordinatesLabel.text = resetLabel()
-          }
+          // val optbinding = scaleFuncTOT(a, endP)
+          // val getf = getfactory(optbinding)
+          // new Line {
+          //   startX <== getf(_._1.x)
+          //   startY <== getf(_._1.y)
+          //   endX <== getf(_._2.x)
+          //   endY <== getf(_._2.y)
+          //   stroke = Color.LightGreen
+          //   onMouseEntered = (ev: MouseEvent) =>
+          //     coordinatesLabel.text =
+          //       s"FAT dual line of ${formatpt(e.rot.orgNotInf)} to ${formatpt(e.tor.orgNotInf)}"
+          //   onMouseExited =
+          //     (ev: MouseEvent) => coordinatesLabel.text = resetLabel()
+          // }
+
+          new Line {}
         }
         case _ =>
           throw new RuntimeException("Unreachable case encountered. trigview")

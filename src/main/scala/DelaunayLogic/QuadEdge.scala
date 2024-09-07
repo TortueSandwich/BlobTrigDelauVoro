@@ -528,7 +528,7 @@ class QuadEdge(
           .toSet
 
         trigpts.toSeq match {
-          case Seq(a, b, c) => FinitePoint.incenter(a, b, c)
+          case Seq(a, b, c) if !FinitePoint.areCollinear(a,b,c) => FinitePoint.incenter(a, b, c)
         }
       })
 

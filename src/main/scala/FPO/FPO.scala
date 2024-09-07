@@ -25,7 +25,6 @@ object FPO {
           !(circumcenter.x < 0 || circumcenter.x > 1) && !(circumcenter.y < 0 || circumcenter.y > 1) &&
           circumradius > rmax
         ) {
-          println("changement d'un point ! " + vertex + " -> " + circumcenter)
           rmax = circumradius
           f = circumcenter
         }

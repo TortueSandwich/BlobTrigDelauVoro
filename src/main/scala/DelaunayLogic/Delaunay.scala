@@ -9,15 +9,55 @@ object Delaunay {
   }
 
   def setVoronoiDual(resEdge: QuadEdge): Unit = {
-    val edgeSets: Set[Set[QuadEdge]] = resEdge.iterator
-      .flatMap(e => Seq(e.right_ring().toSet, e.left_ring().toSet))
-      .toSet
+    resEdge.iterator.foreach(
+      qe => {
+        val a = qe
+        val b = qe.lnext()
+        val c = qe.lnext().lnext()
+        assume(a.dstNotInf() == b.orgNotInf())
+        assume(b.dstNotInf() == c.orgNotInf())
+        val cell = if (c.dstNotInf() == a.orgNotInf()
+        && !FinitePoint.areCollinear(a.orgNotInf(), b.orgNotInf(), c.orgNotInf())
+          && FinitePoint.ccw(a.orgNotInf(), b.orgNotInf(), c.orgNotInf())
+        ) {
+          val cc = FinitePoint.circumcenter(a.orgNotInf(), b.orgNotInf(), c.orgNotInf())
+          MutableCell(cc)
+        } else {
+          MutableCell(InfinitePoint)
+        }
+        qe.tor.setOrigCell(cell)
 
-    if (isTriangle(edgeSets)) {
-      processSimpleVoronoi(edgeSets)
-    } else {
-      processComplexVoronoi(edgeSets)
-    }
+
+        // 
+
+        val d = qe
+        val e = qe.rprev()
+        val f = qe.rprev().rprev()
+        assume(d.dstNotInf() == e.orgNotInf())
+        assume(e.dstNotInf() == f.orgNotInf())
+        val celltwo = if (f.dstNotInf() == d.orgNotInf()
+          && !FinitePoint.areCollinear(d.orgNotInf(), e.orgNotInf(), f.orgNotInf())
+          && !FinitePoint.ccw(d.orgNotInf(), e.orgNotInf(), f.orgNotInf())
+        ) {
+          val circ = FinitePoint.circumcenter(d.orgNotInf(), e.orgNotInf(), f.orgNotInf())
+          MutableCell(circ)
+        } else {
+          MutableCell(InfinitePoint)
+        }
+        qe.rot.setOrigCell(celltwo)
+      }
+    )
+
+    
+    // val edgeSets: Set[Set[QuadEdge]] = resEdge.iterator
+    //   .flatMap(e => Seq(e.right_ring().toSet, e.left_ring().toSet))
+    //   .toSet
+
+    // if (isTriangle(edgeSets)) { // only 3 points
+    //   processSimpleVoronoi(edgeSets)
+    // } else {
+    //   processComplexVoronoi(edgeSets)
+    // }
 
     def isTriangle(edgeSets: Set[Set[QuadEdge]]): Boolean = {
       edgeSets.size == 2 && edgeSets.forall(_.size == 3)
@@ -49,7 +89,7 @@ object Delaunay {
         } else {
           MutableCell(InfinitePoint)
         }
-        edgeSet.foreach(_.setOrigCell(cell))
+        edgeSet.foreach(p => p.setOrigCell(cell))
       }
     }
   }
