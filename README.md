@@ -10,7 +10,7 @@ also TODO : API
 add to ``sbt build`` :
 
 ```scala
-libraryDependencies += "blob" % "quadedgetriangulation_2.13" % "1.0"
+libraryDependencies += "blob" % "quadedgetriangulation_2.13" % "1.+"
 ```
 
 ### Keywords
