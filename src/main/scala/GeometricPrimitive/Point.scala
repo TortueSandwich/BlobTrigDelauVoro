@@ -4,15 +4,15 @@ sealed trait Point
 
 case object InfinitePoint extends Point
 
-  object CounterClockwiseComparator {
-    def apply(center: FinitePoint): Ordering[FinitePoint] = new Ordering[FinitePoint] {
-      def compare(p1: FinitePoint, p2: FinitePoint): Int = {
-        val angle1 = math.atan2(p1.y - center.y, p1.x - center.x)
-        val angle2 = math.atan2(p2.y - center.y, p2.x - center.x)
-        angle1.compareTo(angle2)
-      }
+object CounterClockwiseComparator {
+  def apply(center: FinitePoint): Ordering[FinitePoint] = new Ordering[FinitePoint] {
+    def compare(p1: FinitePoint, p2: FinitePoint): Int = {
+      val angle1 = math.atan2(p1.y - center.y, p1.x - center.x)
+      val angle2 = math.atan2(p2.y - center.y, p2.x - center.x)
+      angle1.compareTo(angle2)
     }
   }
+}
 
 case class FinitePoint(x: Double, y: Double) extends Point with Ordered[FinitePoint] {
   def compare(that: FinitePoint): Int = {
@@ -61,10 +61,18 @@ case class FinitePoint(x: Double, y: Double) extends Point with Ordered[FinitePo
   }
 
   def scale(a: Double): FinitePoint = FinitePoint(this.x * a, this.y * a)
+
+  // not automatic ????
+  def unapply(): (Double, Double) = (x, y)
 }
 
 
 object FinitePoint {
+  
+  // i struggle to use it ????
+  implicit def pointToTuple(p: FinitePoint): (Double, Double) = (p.x, p.y)
+  
+
   def areCollinear(a: FinitePoint, b: FinitePoint, c: FinitePoint): Boolean = {
     assume(a != b, s"a et b sont pareils (i.e = $a)")
     assume(b != c, s"b et c sont pareils (i.e = $b)")

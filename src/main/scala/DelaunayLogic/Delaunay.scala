@@ -1,9 +1,12 @@
 object Delaunay {
-  def TriangulateDelaunay(points: List[FinitePoint]): QuadEdge =
+  def TriangulateDelaunay(points: Iterable[FinitePoint]): QuadEdge =
     TriangulateDelaunay(points, true)
 
+  /** Triangulate a list of points using Quad-edge data structure
+   * Also generate its Dual
+  */
   def TriangulateDelaunay(
-      points: List[FinitePoint],
+      points: Iterable[FinitePoint],
       vornoise: Boolean
   ): QuadEdge = {
     val root = Tree.apply(points)
@@ -12,8 +15,13 @@ object Delaunay {
     resEdge
   }
 
-  def setVoronoiDual(resEdge: QuadEdge): Unit = {
-    resEdge.iterator.foreach(qe => {
+  /** Set value of Point forming the dual (which might not be initialised)
+   * NEED TO TriangulateDelaunay else undefined behavior
+   * 
+   * todo
+  */
+  def setVoronoiDual(quadedge: QuadEdge): Unit = {
+    quadedge.iterator.foreach(qe => {
       val a = qe
       val b = qe.lnext
       val c = qe.lnext.lnext
@@ -233,7 +241,7 @@ object Delaunay {
   }
 
   /** pits the right-wing and left-wing candidates against each other */
-  def linkBestCandidate(
+  private def linkBestCandidate(
       basel: QuadEdge,
       lcand: QuadEdge,
       rcand: QuadEdge,
@@ -260,7 +268,7 @@ object Delaunay {
   }
 
   @annotation.tailrec
-  def findCommonTangeant(ldi: QuadEdge, rdi: QuadEdge): (QuadEdge, QuadEdge) = {
+  private def findCommonTangeant(ldi: QuadEdge, rdi: QuadEdge): (QuadEdge, QuadEdge) = {
     if (ldi.leftof(rdi.orgNotInf)) {
       findCommonTangeant(ldi.lnext, rdi)
     } else if (rdi.rightof(ldi.orgNotInf)) {

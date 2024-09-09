@@ -170,8 +170,6 @@ object TestQuadEdge extends App {
     assert(!(loop.left_cell eq loop.right_cell), "7 loop")
     assert(loop.org_cell eq loop.dst_cell, "8 loop")
 
-    notloop.printAll()
-
     println("ok pour test_make()")
   }
 

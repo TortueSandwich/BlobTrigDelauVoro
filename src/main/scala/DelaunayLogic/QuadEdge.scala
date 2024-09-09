@@ -18,11 +18,11 @@ import scala.annotation.tailrec
   * Onext | Rnext         Lprev | Oprev
   * ```
   *
-  * qe.onext.onext.onext.onext... gives every edge that are connected to the
+  * qe.onext.onext.onext.onext... gives every edge that is connected to the
   * Org, all qe, qe.onext, qe.onext.onext have the same Org, it's spinning
   * around Org
   *
-  * To place yourself on the dual, just call .rot This structure does not depend
+  * TTo position yourself on the dual, just call .rot This structure does not depend
   * on the coordinate of the point, only on the relationships between the points
   * and the surfaces
   *
@@ -43,22 +43,38 @@ class QuadEdge(
   // Why a cell ? cause i wanted to edit the coordinate one time after setting the reference
   // might need some fixes tho
 
+  /** use orgNotInf to get finite point */
   def org: Point = orig.elem
+  /** Returns the finite origin point.
+ * @throws RuntimeException if the origin is infinite.
+ */
   def org_uncheckinf: FinitePoint = org match {
     case InfinitePoint =>
       throw new RuntimeException("org_uncheckinf giving inf")
     case p: FinitePoint => p
   }
+  /** Returns the finite origin point.
+ * @throws RuntimeException if the origin is infinite.
+ */
   def orgNotInf: FinitePoint = org_uncheckinf
+  /** modifying the element in the cell affects all Quad-edges having the same origin FinitePoint reference */
   def org_cell: Cell[Point] = orig
 
+  /** use dstNotInf to get finite point */
   def dst: Point = sym.org
+  /** Returns the finite destination point.
+ * @throws RuntimeException if the origin is infinite.
+ */
   def dst_uncheckinf: FinitePoint = sym.org match {
     case InfinitePoint =>
       throw new RuntimeException("dst_uncheckinf giving inf")
     case p: FinitePoint => p
   }
+  /** Returns the finite destination point.
+ * @throws RuntimeException if the origin is infinite.
+ */
   def dstNotInf: FinitePoint = dst_uncheckinf
+  /** modifying the element in the cell affects all Quad-edges having the same destination FinitePoint reference */
   def dst_cell: Cell[Point] = sym.org_cell
 
   def left: Point = this.tor.org
@@ -85,7 +101,7 @@ class QuadEdge(
   def setNext(new_next: QuadEdge) = next = new_next
   def setOrig(org: Point) = orig match {
     case orig: MutableCell[Point] => orig.set(org)
-    case ImmutableCell(elem) =>
+    case ImmutableCell(element) =>
       throw new RuntimeException("cannot change immutable cell")
   }
 
@@ -95,28 +111,159 @@ class QuadEdge(
 
   override def toString: String = s"${org} -> ${dst}"
 
-  def deleteEdge() = {
+  override def iterator: Iterator[QuadEdge] = {
+    val v = scala.collection.mutable.Set[QuadEdge]()
+    val stack = scala.collection.mutable.Stack[QuadEdge](this)
+
+    while (stack.nonEmpty) {
+      val e = stack.pop()
+      if (!v.contains(e) && !v.contains(e.sym)) {
+        v.add(e)
+        stack.push(e.onext)
+        stack.push(e.lnext)
+        stack.push(e.dnext)
+        stack.push(e.rnext)
+      }
+    }
+
+    v.iterator
+  }
+
+  /** returns all quad-edges having the same origin (reference) */
+  def org_ring(): List[QuadEdge] = {
+    @tailrec
+    def helper(curr: QuadEdge, acc: List[QuadEdge]): List[QuadEdge] = {
+      if (acc.contains(curr)) acc
+      else helper(curr.onext, curr :: acc)
+    }
+    helper(this, Nil)
+  }
+
+  /** returns all quad-edges having the same origin reference (not necessary the same FinitePoint)*/
+  def dest_ring(): List[QuadEdge] = this.sym.org_ring()
+  /** returns all Quad-edges having the same left reference (not necessary the same FinitePoint)
+   * Left is in the dual*/
+  def left_ring(): List[QuadEdge] = this.tor.org_ring()
+  /** returns all Quad-edges having the same right reference (not necessary the same FinitePoint)
+   * right is in the dual*/
+  def right_ring(): List[QuadEdge] = this.rot.org_ring()
+
+  /** return all FinitePoint */
+  def getPoints() : Seq[FinitePoint] =
+    this.iterator.flatMap(e => Seq(e.orgNotInf, e.dstNotInf)).toSet.toSeq
+
+  /** delete quad-edge WITHOUT PRESERVING TRIANGULATION properties */
+  def deleteEdge() : Unit = {
     QuadEdge.splice(this, this.oprev)
     QuadEdge.splice(this.sym, this.sym.oprev)
   }
 
+  /** returns all the quad-edges that form the hull 
+   * All the quad-edges exposed to the outer
+   * 
+   * MUST BE TRIANGULATED, otherwise behavior is undefined.
+   * Todo
+   * */
   def getExternalHull(): Set[QuadEdge] = {
     val edgeSets: Set[Set[QuadEdge]] = this.iterator
       .flatMap(e => Seq(e.left_ring().toSet, e.right_ring().toSet))
       .toSet
-
     val t = edgeSets.iterator.filterNot(_.size == 3).map(_.map(_.rot)).toSeq
-    // println("wtffffff")
-    // println(t.size)
-    // t.foreach(println)
-    // println("wtffffff")
     assert(t.size == 1)
     return t(0)
   }
 
-  // val valid = !FinitePoint.ccw(next, curr, prev) && QuadEdge.make_edge(next, prev).rightof(e.orgNotInf)
+    /** if point is strictly on the right side of the quad-edge*/
+  def rightof(X: FinitePoint): Boolean = {
+    val orgp = this.org match {
+      case p: FinitePoint => p
+      case InfinitePoint =>
+        throw new RuntimeException("cannot pass infinite point")
+    }
+    val dstp = this.dst match {
+      case p: FinitePoint => p
+      case InfinitePoint =>
+        throw new RuntimeException("cannot pass infinite point")
+    }
+    FinitePoint.ccw(X, dstp, orgp)
+  }
 
-  def deleteEdgeFromTriangulationSPECIAL(): Unit = {
+  /** if point is strictly on the left side of the quad-edge */
+  def leftof(X: FinitePoint): Boolean = {
+    val orgp = this.org match {
+      case p: FinitePoint => p
+      case InfinitePoint =>
+        throw new RuntimeException("cannot pass infinite point")
+    }
+    val dstp = this.dst match {
+      case p: FinitePoint => p
+      case InfinitePoint =>
+        throw new RuntimeException("cannot pass infinite point")
+    }
+    FinitePoint.ccw(X, orgp, dstp)
+  }
+
+
+  def getTriangle() : Set[(FinitePoint,FinitePoint,FinitePoint)] = {
+    val edgeSets: Set[Set[QuadEdge]] = this.iterator
+      .flatMap(e => Seq(e.right_ring().toSet, e.left_ring().toSet))
+      .toSet
+
+    edgeSets
+      .filter(_.size == 3)
+      .map(s => {
+        val trigpts = s
+          .flatMap(e => Seq(e.rot.orgNotInf, e.rot.dstNotInf))
+          .toSet
+
+        trigpts.toSeq match {
+          case Seq(a, b, c) => (a, b, c)
+        }
+      })
+  }
+
+
+  /** returns a COPY version where add point in middle each segment and 
+   * the center of inscrit circle 
+   *
+   * Not tested. Use at your own risk.
+   * */
+  def fatonise() = {
+    val pts = getPoints()
+    val mdl =
+      this.iterator.map(e => Segment(e.orgNotInf, e.dstNotInf).middle).toSeq
+
+    val edgeSets: Set[Set[QuadEdge]] = this.iterator
+      .flatMap(e => Seq(e.right_ring().toSet, e.left_ring().toSet))
+      .toSet
+
+    val incirc = edgeSets
+      .filter(_.size == 3)
+      .map(s => {
+        val trigpts = s
+          .flatMap(e =>
+            Seq(
+              e.rot.orgNotInf,
+              e.rot.dstNotInf,
+              e.tor.orgNotInf,
+              e.tor.dstNotInf
+            )
+          )
+          .toSet
+
+        trigpts.toSeq match {
+          case Seq(a, b, c) if !FinitePoint.areCollinear(a, b, c) =>
+            FinitePoint.incenter(a, b, c)
+        }
+      })
+
+    val newFat =
+      Delaunay.TriangulateDelaunay(pts.concat(mdl).concat(incirc).toSet.toList)
+    newFat
+  }
+
+  // in developement
+  private def deleteEdgeFromTriangulationSPECIAL(): Unit = {
     val toDelete = this.orgNotInf
     val orgRing = this.org_ring()
     val externalHullEdges = getExternalHull()
@@ -185,6 +332,7 @@ class QuadEdge(
 
   }
 
+  // in developement
   private def calculateCircumcenterDistance(
       preve: QuadEdge,
       e: QuadEdge,
@@ -199,11 +347,12 @@ class QuadEdge(
     ((preve, e, nexte), FinitePoint.euclidian(e.dstNotInf, circ))
   }
 
+  // in developement (case of quad edge of the external hull)
   def deleteEdgeFromTriangulation(): Unit = {
     val ptsFromHull =
       getExternalHull().flatMap(q => q.orgNotInf :: q.dstNotInf :: Nil).toSet
     if (ptsFromHull.contains(this.orgNotInf)) {
-      println("cas spécial")
+      println("special case")
       this.deleteEdgeFromTriangulationSPECIAL()
     } else {
       println("cas Facile")
@@ -249,7 +398,8 @@ class QuadEdge(
     }
   }
 
-  def deleteEdgeFromTriangulationEX(): Unit = {
+  // in developement
+  private def deleteEdgeFromTriangulationEX(): Unit = {
     var orgRingEdges = this
       .org_ring()
       .sortBy(_.dstNotInf)(CounterClockwiseComparator(this.orgNotInf))
@@ -270,7 +420,8 @@ class QuadEdge(
 
   }
 
-  def deleteEdgeFromTriangulationEX2(): Unit = {
+  // in developement
+  private def deleteEdgeFromTriangulationEX2(): Unit = {
     def calculateCircumcenterDistance(
         preve: QuadEdge,
         e: QuadEdge,
@@ -354,189 +505,19 @@ class QuadEdge(
 
   }
 
-  def org_ring(): List[QuadEdge] = {
-    @tailrec
-    def helper(curr: QuadEdge, acc: List[QuadEdge]): List[QuadEdge] = {
-      if (acc.contains(curr)) acc
-      else helper(curr.onext, curr :: acc)
-    }
-    helper(this, Nil)
-  }
-
-  def dest_ring(): List[QuadEdge] = this.sym.org_ring()
-  def left_ring(): List[QuadEdge] = this.tor.org_ring()
-  def right_ring(): List[QuadEdge] = this.rot.org_ring()
-
-  def same_org_ring(rhs: QuadEdge) =
-    this.org_ring().toSet == rhs.org_ring().toSet
-  def same_dst_ring(rhs: QuadEdge) =
-    this.sym.org_ring().toSet == rhs.sym.org_ring().toSet
-  def same_right_ring(rhs: QuadEdge) = this.rot.same_org_ring(rhs.rot)
-  def same_left_ring(rhs: QuadEdge) = this.tor.same_org_ring(rhs.tor)
-
-  // def maj_ring() = {
-  //   val r = this.right_ring()
-  //   if (is_closed_loop(r.map(_.tor))) {
-  //     val cr = Point.centroid(r.map(_.tor.orig.elem).toSet.toList)
-  //     val celcr = Cell(cr)
-  //     r.foreach(_.setOrigCell(celcr))
-  //   }
-
-  //   val l = this.left_ring()
-  //   if (is_closed_loop(l.map(_.rot))) {
-  //     val cl = Point.centroid(l.map(_.rot.orig.elem).toSet.toList)
-  //     val celcl = Cell(cl)
-  //     l.foreach(_.setOrigCell(celcl))
-  //   }
-  // }
-
-  def is_closed_loop(ring: List[QuadEdge]): Boolean = {
-    @scala.annotation.tailrec
-    def checkLoop(
-        remaining: List[QuadEdge],
-        visited: mutable.Set[QuadEdge]
-    ): Boolean = {
-      remaining match {
-        case Nil => true
-        case head :: tail =>
-          if (visited.contains(head) || visited.contains(head.sym)) {
-            false
-          } else {
-            visited.add(head)
-            checkLoop(tail, visited)
-          }
-      }
-    }
-    checkLoop(ring, mutable.Set[QuadEdge]())
-  }
-
+  /** see QuadEdge.splice */
   def splice(rhs: QuadEdge) = QuadEdge.splice(this, rhs)
 
-  /** Splice */
+  /** Splice 
+   * QuadEdge.splice */
   def $$(rhs: QuadEdge) = this splice rhs
 
+
+  /** see QuadEdge.connect */
   def connectTo(rhs: QuadEdge): QuadEdge = QuadEdge.connect(this, rhs)
 
-  /** Connect */
+  /** see QuadEdge.connect */
   def --->(rhs: QuadEdge) = this connectTo rhs
-
-  def printAll() = {
-    println(lnext.toString + "   <-   " + dst + "   <-   " + dnext)
-    println("                                         ^")
-    println("                                         |")
-    println(onext.toString + "   <-   " + org + "   <-   " + rnext)
-  }
-
-  def printAllDual() = {
-    println(rot.lnext.toString + "   <-   " + rot.dst + "   <-   " + rot.dnext)
-    println("                                         ^")
-    println("                                         |")
-    println(rot.onext.toString + "   <-   " + rot.org + "   <-   " + rot.rnext)
-  }
-
-  override def iterator: Iterator[QuadEdge] = {
-    val v = scala.collection.mutable.Set[QuadEdge]()
-    val stack = scala.collection.mutable.Stack[QuadEdge](this)
-
-    while (stack.nonEmpty) {
-      val e = stack.pop()
-      if (!v.contains(e) && !v.contains(e.sym)) {
-        v.add(e)
-        stack.push(e.onext)
-        stack.push(e.lnext)
-        stack.push(e.dnext)
-        stack.push(e.rnext)
-      }
-    }
-
-    v.iterator
-  }
-
-  /** Strictly on the right side */
-  def rightof(X: FinitePoint): Boolean = {
-    val orgp = this.org match {
-      case p: FinitePoint => p
-      case InfinitePoint =>
-        throw new RuntimeException("cannot pass infinite point")
-    }
-    val dstp = this.dst match {
-      case p: FinitePoint => p
-      case InfinitePoint =>
-        throw new RuntimeException("cannot pass infinite point")
-    }
-    FinitePoint.ccw(X, dstp, orgp)
-  }
-
-  /** Strictly on the left side */
-  def leftof(X: FinitePoint): Boolean = {
-    val orgp = this.org match {
-      case p: FinitePoint => p
-      case InfinitePoint =>
-        throw new RuntimeException("cannot pass infinite point")
-    }
-    val dstp = this.dst match {
-      case p: FinitePoint => p
-      case InfinitePoint =>
-        throw new RuntimeException("cannot pass infinite point")
-    }
-    FinitePoint.ccw(X, orgp, dstp)
-  }
-
-  def getPoints() =
-    this.iterator.flatMap(e => Seq(e.orgNotInf, e.dstNotInf)).toSet.toSeq
-
-  def getTriangle() = {
-    val edgeSets: Set[Set[QuadEdge]] = this.iterator
-      .flatMap(e => Seq(e.right_ring().toSet, e.left_ring().toSet))
-      .toSet
-
-    edgeSets
-      .filter(_.size == 3)
-      .map(s => {
-        val trigpts = s
-          .flatMap(e => Seq(e.rot.orgNotInf, e.rot.dstNotInf))
-          .toSet
-
-        trigpts.toSeq match {
-          case Seq(a, b, c) => (a, b, c)
-        }
-      })
-  }
-
-  /** add point in middle a eche segment and the center of inscrit circle */
-  def fatonise() = {
-    val pts = getPoints()
-    val mdl =
-      this.iterator.map(e => Segment(e.orgNotInf, e.dstNotInf).middle).toSeq
-
-    val edgeSets: Set[Set[QuadEdge]] = this.iterator
-      .flatMap(e => Seq(e.right_ring().toSet, e.left_ring().toSet))
-      .toSet
-
-    val incirc = edgeSets
-      .filter(_.size == 3)
-      .map(s => {
-        val trigpts = s
-          .flatMap(e =>
-            Seq(
-              e.rot.orgNotInf,
-              e.rot.dstNotInf,
-              e.tor.orgNotInf,
-              e.tor.dstNotInf
-            )
-          )
-          .toSet
-
-        trigpts.toSeq match {
-          case Seq(a, b, c) if !FinitePoint.areCollinear(a, b, c) =>
-            FinitePoint.incenter(a, b, c)
-        }
-      })
-
-    val newFat =
-      Delaunay.TriangulateDelaunay(pts.concat(mdl).concat(incirc).toSet.toList)
-    newFat
-  }
 
 };
 
@@ -578,7 +559,10 @@ object QuadEdge {
 
   /** Operation primitive
     *
-    * Let's be easy a.Org = b.Org <=SPLICE!=> a.Org != b.Org independently
+    * Let's be easy 
+    * 
+    * a.Org = b.Org <=SPLICE!=> a.Org != b.Org 
+    * and independently
     * a.left = b.left <=SPLICE!=> a.left != b.left
     *
     * achieved by splitting/fusionning onexts
@@ -595,6 +579,7 @@ object QuadEdge {
     // b.maj_ring() // useless :|, needs to think about it
   }
 
+  /** Connect a.dst to b.org by creating a quad-edge*/
   def connect(a: QuadEdge, b: QuadEdge): QuadEdge = {
     val e = make_edge(a.dst, b.org)
     e.setOrig(a.dst)
@@ -606,7 +591,9 @@ object QuadEdge {
     e
   }
 
-  // utilisé dans la version incrementale
+  /** Swap quad-edge "arrow (org->dst) with its dual"
+   *  used incremental version (which is not implemented)
+  */
   def swap(e: QuadEdge) = {
     val a = e.oprev
     val b = e.sym.oprev
