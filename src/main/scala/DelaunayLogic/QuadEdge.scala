@@ -18,13 +18,12 @@ import scala.annotation.tailrec
   * Onext | Rnext         Lprev | Oprev
   * ```
   *
-  * qe.onext.onext.onext.onext... gives every edge that is connected to the
-  * Org, all qe, qe.onext, qe.onext.onext have the same Org, it's spinning
-  * around Org
+  * qe.onext.onext.onext.onext... gives every edge that is connected to the Org,
+  * all qe, qe.onext, qe.onext.onext have the same Org, it's spinning around Org
   *
-  * TTo position yourself on the dual, just call .rot This structure does not depend
-  * on the coordinate of the point, only on the relationships between the points
-  * and the surfaces
+  * TTo position yourself on the dual, just call .rot This structure does not
+  * depend on the coordinate of the point, only on the relationships between the
+  * points and the surfaces
   *
   * ```txt
   *         dst
@@ -45,36 +44,50 @@ class QuadEdge(
 
   /** use orgNotInf to get finite point */
   def org: Point = orig.elem
+
   /** Returns the finite origin point.
- * @throws RuntimeException if the origin is infinite.
- */
+    * @throws RuntimeException
+    *   if the origin is infinite.
+    */
   def org_uncheckinf: FinitePoint = org match {
     case InfinitePoint =>
       throw new RuntimeException("org_uncheckinf giving inf")
     case p: FinitePoint => p
   }
+
   /** Returns the finite origin point.
- * @throws RuntimeException if the origin is infinite.
- */
+    * @throws RuntimeException
+    *   if the origin is infinite.
+    */
   def orgNotInf: FinitePoint = org_uncheckinf
-  /** modifying the element in the cell affects all Quad-edges having the same origin FinitePoint reference */
+
+  /** modifying the element in the cell affects all Quad-edges having the same
+    * origin FinitePoint reference
+    */
   def org_cell: Cell[Point] = orig
 
   /** use dstNotInf to get finite point */
   def dst: Point = sym.org
+
   /** Returns the finite destination point.
- * @throws RuntimeException if the origin is infinite.
- */
+    * @throws RuntimeException
+    *   if the origin is infinite.
+    */
   def dst_uncheckinf: FinitePoint = sym.org match {
     case InfinitePoint =>
       throw new RuntimeException("dst_uncheckinf giving inf")
     case p: FinitePoint => p
   }
+
   /** Returns the finite destination point.
- * @throws RuntimeException if the origin is infinite.
- */
+    * @throws RuntimeException
+    *   if the origin is infinite.
+    */
   def dstNotInf: FinitePoint = dst_uncheckinf
-  /** modifying the element in the cell affects all Quad-edges having the same destination FinitePoint reference */
+
+  /** modifying the element in the cell affects all Quad-edges having the same
+    * destination FinitePoint reference
+    */
   def dst_cell: Cell[Point] = sym.org_cell
 
   def left: Point = this.tor.org
@@ -139,31 +152,36 @@ class QuadEdge(
     helper(this, Nil)
   }
 
-  /** returns all quad-edges having the same origin reference (not necessary the same FinitePoint)*/
+  /** returns all quad-edges having the same origin reference (not necessary the
+    * same FinitePoint)
+    */
   def dest_ring(): List[QuadEdge] = this.sym.org_ring()
-  /** returns all Quad-edges having the same left reference (not necessary the same FinitePoint)
-   * Left is in the dual*/
+
+  /** returns all Quad-edges having the same left reference (not necessary the
+    * same FinitePoint) Left is in the dual
+    */
   def left_ring(): List[QuadEdge] = this.tor.org_ring()
-  /** returns all Quad-edges having the same right reference (not necessary the same FinitePoint)
-   * right is in the dual*/
+
+  /** returns all Quad-edges having the same right reference (not necessary the
+    * same FinitePoint) right is in the dual
+    */
   def right_ring(): List[QuadEdge] = this.rot.org_ring()
 
   /** return all FinitePoint */
-  def getPoints() : Seq[FinitePoint] =
+  def getPoints(): Seq[FinitePoint] =
     this.iterator.flatMap(e => Seq(e.orgNotInf, e.dstNotInf)).toSet.toSeq
 
   /** delete quad-edge WITHOUT PRESERVING TRIANGULATION properties */
-  def deleteEdge() : Unit = {
+  def deleteEdge(): Unit = {
     QuadEdge.splice(this, this.oprev)
     QuadEdge.splice(this.sym, this.sym.oprev)
   }
 
-  /** returns all the quad-edges that form the hull 
-   * All the quad-edges exposed to the outer
-   * 
-   * MUST BE TRIANGULATED, otherwise behavior is undefined.
-   * Todo
-   * */
+  /** returns all the quad-edges that form the hull All the quad-edges exposed
+    * to the outer
+    *
+    * MUST BE TRIANGULATED, otherwise behavior is undefined. Todo
+    */
   def getExternalHull(): Set[QuadEdge] = {
     val edgeSets: Set[Set[QuadEdge]] = this.iterator
       .flatMap(e => Seq(e.left_ring().toSet, e.right_ring().toSet))
@@ -173,7 +191,7 @@ class QuadEdge(
     return t(0)
   }
 
-    /** if point is strictly on the right side of the quad-edge*/
+  /** if point is strictly on the right side of the quad-edge */
   def rightof(X: FinitePoint): Boolean = {
     val orgp = this.org match {
       case p: FinitePoint => p
@@ -203,8 +221,7 @@ class QuadEdge(
     FinitePoint.ccw(X, orgp, dstp)
   }
 
-
-  def getTriangle() : Set[(FinitePoint,FinitePoint,FinitePoint)] = {
+  def getTriangle(): Set[(FinitePoint, FinitePoint, FinitePoint)] = {
     val edgeSets: Set[Set[QuadEdge]] = this.iterator
       .flatMap(e => Seq(e.right_ring().toSet, e.left_ring().toSet))
       .toSet
@@ -222,12 +239,11 @@ class QuadEdge(
       })
   }
 
-
-  /** returns a COPY version where add point in middle each segment and 
-   * the center of inscrit circle 
-   *
-   * Not tested. Use at your own risk.
-   * */
+  /** returns a COPY version where add point in middle each segment and the
+    * center of inscrit circle
+    *
+    * Not tested. Use at your own risk.
+    */
   def fatonise() = {
     val pts = getPoints()
     val mdl =
@@ -508,10 +524,9 @@ class QuadEdge(
   /** see QuadEdge.splice */
   def splice(rhs: QuadEdge) = QuadEdge.splice(this, rhs)
 
-  /** Splice 
-   * QuadEdge.splice */
+  /** Splice QuadEdge.splice
+    */
   def $$(rhs: QuadEdge) = this splice rhs
-
 
   /** see QuadEdge.connect */
   def connectTo(rhs: QuadEdge): QuadEdge = QuadEdge.connect(this, rhs)
@@ -559,11 +574,10 @@ object QuadEdge {
 
   /** Operation primitive
     *
-    * Let's be easy 
-    * 
-    * a.Org = b.Org <=SPLICE!=> a.Org != b.Org 
-    * and independently
-    * a.left = b.left <=SPLICE!=> a.left != b.left
+    * Let's be easy
+    *
+    * a.Org = b.Org <=SPLICE!=> a.Org != b.Org and independently a.left = b.left
+    * <=SPLICE!=> a.left != b.left
     *
     * achieved by splitting/fusionning onexts
     */
@@ -579,7 +593,7 @@ object QuadEdge {
     // b.maj_ring() // useless :|, needs to think about it
   }
 
-  /** Connect a.dst to b.org by creating a quad-edge*/
+  /** Connect a.dst to b.org by creating a quad-edge */
   def connect(a: QuadEdge, b: QuadEdge): QuadEdge = {
     val e = make_edge(a.dst, b.org)
     e.setOrig(a.dst)
@@ -591,9 +605,9 @@ object QuadEdge {
     e
   }
 
-  /** Swap quad-edge "arrow (org->dst) with its dual"
-   *  used incremental version (which is not implemented)
-  */
+  /** Swap quad-edge "arrow (org->dst) with its dual" used incremental version
+    * (which is not implemented)
+    */
   def swap(e: QuadEdge) = {
     val a = e.oprev
     val b = e.sym.oprev

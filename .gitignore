@@ -6,3 +6,4 @@ target/
 .bloop/
 *.pdf
 .bsp
+temp/
