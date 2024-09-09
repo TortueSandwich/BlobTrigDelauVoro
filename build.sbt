@@ -21,3 +21,6 @@ runUiMain := (Compile / runMain).toTask(" UiMain").value
 
 lazy val runTestGeom = taskKey[Unit]("Runs the TestGeom class")
 runTestGeom := (Compile / runMain).toTask(" TestGeom").value
+
+lazy val runBench = taskKey[Unit]("Runs delaunay benchmark")
+runBench := (Compile / runMain).toTask(" DelaunayBenchmark").value

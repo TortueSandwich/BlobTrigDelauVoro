@@ -15,8 +15,8 @@ private object Tree {
 
   /** Throw IllegalArgumentException si la liste contient des points dupliqués
     */
-  def apply(elements: List[FinitePoint]): Tree = {
-    val uniqueElements = elements.distinct
+  def apply(elements: Iterable[FinitePoint]): Tree = {
+    val uniqueElements = elements.toSeq.distinct
     if (uniqueElements.size != elements.size) {
       throw new IllegalArgumentException(
         "Il y a deux points pareil dans la liste à trianguler"
@@ -27,7 +27,7 @@ private object Tree {
     }
   }
 
-  private def recBuild(elements: List[FinitePoint]): Tree = {
+  private def recBuild(elements: Seq[FinitePoint]): Tree = {
     if (elements.length <= 3) {
       Leaf(
         elements(0),
