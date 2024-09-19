@@ -1,3 +1,5 @@
+package GeometricPrimitives
+
 case class Segment(A: FinitePoint, B: FinitePoint) {
   def middle: FinitePoint = FinitePoint((A.x + B.x) / 2, (A.y + B.y) / 2)
 

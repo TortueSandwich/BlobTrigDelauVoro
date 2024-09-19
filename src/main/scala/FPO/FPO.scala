@@ -1,3 +1,8 @@
+package fpo
+
+import DelaunayLogic._
+import GeometricPrimitives._
+
 object FPO {
 
   def fpoIteration(

@@ -1,3 +1,7 @@
+package DelaunayLogic
+
+import GeometricPrimitives._
+
 object Delaunay {
   def TriangulateDelaunay(points: Iterable[FinitePoint]): QuadEdge =
     TriangulateDelaunay(points, true)

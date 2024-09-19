@@ -2,7 +2,7 @@ scalaVersion := "2.13.12"
 
 name := "QuadEdgeTriangulation"
 organization := "blob"
-version := "1.2"
+version := "1.2.3"
 
 githubOwner := "TortueSandwich"
 githubRepository := "BlobTrigDelauVoro"

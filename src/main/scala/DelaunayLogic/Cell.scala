@@ -1,3 +1,5 @@
+package DelaunayLogic
+
 // This is not very useful, it is to use a reference for quadedges that have the same origin
 
 sealed trait Cell[+T] {

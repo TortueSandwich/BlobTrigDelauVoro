@@ -1,3 +1,7 @@
+package DelaunayLogic
+
+import GeometricPrimitives.FinitePoint
+
 /** Custom structure to cut an ordered sequence in groups of 2 or 3 consecutive
   * elements.
   */

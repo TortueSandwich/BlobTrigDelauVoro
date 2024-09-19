@@ -1,3 +1,5 @@
+package GeometricPrimitives
+
 import scala.util.Random
 
 sealed trait Point

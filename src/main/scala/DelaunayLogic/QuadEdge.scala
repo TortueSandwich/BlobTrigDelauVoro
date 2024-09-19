@@ -1,3 +1,5 @@
+package DelaunayLogic
+
 import scala.collection.mutable.ArrayBuffer
 import java.util.ArrayList
 import java.util.LinkedList
@@ -5,6 +7,7 @@ import scala.util.Random
 import scala.util.control.Breaks._
 import scala.collection.mutable
 import scala.annotation.tailrec
+import GeometricPrimitives._
 
 /** Represents an edge in a subdivision of a space and its dual. A kind of
   * parallel crossed double linked list
