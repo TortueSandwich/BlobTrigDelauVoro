@@ -1,6 +1,7 @@
 ## Delaunay Triangulation / Voronoi Diagram
 
 "Object oriented" fuonctionnal implementation of QuadEdge and guibas stolfi divide and conquer algorithm for delaunay triangulation
+
 I mean it is more readable/understanable than pure C code (at least, i hope)
 
 the paper : http://mesh.brown.edu/DGP/pdfs/Guibas-tog85.pdf
